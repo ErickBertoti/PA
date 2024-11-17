@@ -1,50 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { uploadDocument, getDocuments } from '../api';
+import React, { useState } from 'react';
+import axios from 'axios';
 
-const Home: React.FC = () => {
-  const [documents, setDocuments] = useState<any[]>([]);
+const FileUpload: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [message, setMessage] = useState<string>('');
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
-  const fetchDocuments = async () => {
-    const { data } = await getDocuments();
-    setDocuments(data);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files) {
+      setFile(event.target.files[0]);
+    }
   };
 
   const handleUpload = async () => {
-    if (!file) return;
-    await uploadDocument(file);
-    setFile(null);
-    fetchDocuments();
+    if (!file) {
+      setMessage('Selecione um arquivo primeiro');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await axios.post('http://localhost:5000/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      setMessage(`Upload bem-sucedido! URL: ${response.data.url}`);
+    } catch (error) {
+      setMessage('Erro no upload do arquivo.');
+      console.error(error);
+    }
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold mb-4">Upload a Document</h2>
-      <input
-        type="file"
-        onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
-      />
-      <button
-        onClick={handleUpload}
-        className="bg-blue-600 text-white p-2 mt-2"
-      >
-        Upload
-      </button>
-
-      <h2 className="text-xl font-bold mt-6">Documents</h2>
-      <ul>
-        {documents.map((doc) => (
-          <li key={doc.id} className="border-b py-2">
-            {doc.name} - {doc.category}
-          </li>
-        ))}
-      </ul>
+    <div>
+      <input type="file" onChange={handleFileChange} />
+      <button onClick={handleUpload}>Upload</button>
+      <p>{message}</p>
     </div>
   );
 };
 
-export default Home;
+export default FileUpload;
