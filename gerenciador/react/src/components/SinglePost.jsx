@@ -1,5 +1,4 @@
-import { ChatIcon, UserIcon, TrashIcon } from '@heroicons/react/solid'
-import { HeartIcon as HeartOutline } from '@heroicons/react/outline'
+import { UserIcon, TrashIcon } from '@heroicons/react/solid'
 
 export default function SinglePost({className, post, likeClicked, commentClicked, deletePostClicked}) {
   const {id, caption, imageUrl, totalComments, totalLikes} = post
@@ -21,24 +20,14 @@ export default function SinglePost({className, post, likeClicked, commentClicked
 
           <img className="rounded" width="430" height="768" src={imageUrl}></img>
 
-          {/* Actions */}
-          <div className='flex flex-col space-y-4'>
-            <div className='flex flex-col items-center' onClick={() => likeClicked({id})}>
-              <HeartOutline className='cursor-pointer hover:text-gray-900 active:text-gray-700 h-14 w-14 text-gray-700' />
-              <p>{totalLikes}</p>
-            </div>
-            <div className='flex flex-col items-center' onClick={() => commentClicked({id})}>
-              <ChatIcon className='cursor-pointer hover:text-gray-900 active:text-gray-700 h-14 w-14 text-gray-700' />
-              <p>{totalComments}</p>
-            </div>
+          {/* Ações */}
 
             <div className='flex flex-col items-center' onClick={() => deletePostClicked({id})}>
               <TrashIcon className='cursor-pointer hover:text-gray-900 active:text-gray-700 h-14 w-14 text-gray-700' />
             </div>
           </div>          
         </div>
-
       </div>
-    </div>
+    
   )
 }

@@ -9,7 +9,7 @@ Todo código do Backend está na pasta express, só rode os comando do Back no t
 Crie um arquivo .env no express e insira as linhas abaixo:
 
 ```env
-DATABASE_URL=''
+DATABASE_URL='mysql://root:senha@localhost:3306/nomedobanco'
 
 AWS_BUCKET_NAME='pa-gerenciador-arquivos'
 AWS_BUCKET_REGION='us-east-1'

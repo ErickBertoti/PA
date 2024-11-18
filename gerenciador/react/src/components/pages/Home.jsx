@@ -19,12 +19,6 @@ function App() {
     getPosts()
   }, [])
 
-  const likeClicked = async ({id}) => {
-    console.log(`likeClicked = (${id})`)
-  }
-  const commentClicked = ({id}) => {
-    console.log(`commentClicked = (${id})`)
-  }
   const editPostClicked = ({id}) => {
     navigate("/editPost/" + id)
     console.log(`editPostClicked = (${id})`)
@@ -36,8 +30,6 @@ function App() {
   }
 
   const postActions = {
-    likeClicked,
-    commentClicked,
     editPostClicked,
     deletePostClicked
   }
