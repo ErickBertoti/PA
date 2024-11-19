@@ -56,4 +56,9 @@ app.delete("/api/posts/:id", async (req, res) => {
   res.send(post)
 })
 
+app.get("/api/categories", async (req, res) => {
+  const categories = await prisma.category.findMany()
+  res.send(categories)
+})
+
 app.listen(8080, () => console.log("listening on port 8080"))

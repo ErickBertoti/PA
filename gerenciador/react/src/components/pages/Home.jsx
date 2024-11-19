@@ -5,18 +5,27 @@ import SinglePost from '../SinglePost'
 
 import { useNavigate } from 'react-router-dom'
 
-
 function App() {  
 
   const [posts, setPosts] = useState([])
+  const [categories, setCategories] = useState({})
   let navigate = useNavigate();
 
   useEffect(() => {
-    async function getPosts() {
-      const result = await axios.get("/api/posts")
-      setPosts(result.data)
+    async function getPostsAndCategories() {
+      const [postsResponse, categoriesResponse] = await Promise.all([
+        axios.get("/api/posts"),
+        axios.get("/api/categories")
+      ])
+
+      setPosts(postsResponse.data)
+      const categoriesMap = categoriesResponse.data.reduce((acc, category) => {
+        acc[category.id] = category.name
+        return acc
+      }, {})
+      setCategories(categoriesMap)
     }
-    getPosts()
+    getPostsAndCategories()
   }, [])
 
   const editPostClicked = ({id}) => {
@@ -34,7 +43,6 @@ function App() {
     deletePostClicked
   }
 
-
   return (
     <div className="App">
 
@@ -42,7 +50,7 @@ function App() {
         {posts.map(post => (
           <div key={`post-${post.id}`} className="px-5 py-14">
 
-            <SinglePost className="relative" post={post} {...postActions}></SinglePost>
+            <SinglePost className="relative" post={post} category={categories[post.categoryId]} deletePostClicked={deletePostClicked}></SinglePost>
             
           </div>
         ))}
