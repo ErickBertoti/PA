@@ -2,7 +2,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 
-export default function NewPost() {  
+export default function NewPost() {
 
   const [file, setFile] = useState()
   const [caption, setCaption] = useState("")
@@ -33,21 +33,19 @@ export default function NewPost() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center">
-
-        <form onSubmit={submit} style={{width:650}} className="flex flex-col space-y-5 px-5 py-14">
-          <input onChange={fileSelected} type="file" accept="image/*"></input>
-          <input value={caption} onChange={e => setCaption(e.target.value)} type="text" placeholder='Descrição'></input>
-          <select onChange={categorySelected}>
-            <option value="">Selecione uma categoria</option>
-            <option value="1">Ícones</option>
-            <option value="2">Trabalho</option>
-            <option value="3">Educação</option>
-            <option value="4">Outros</option>
-            </select>
-          <button type="submit">Enviar</button>
-        </form>
-
+    <div className="flex flex-col items-center justify-center h-screen">
+      <form onSubmit={submit} className="flex flex-col space-y-5 p-5 bg-white rounded shadow-md w-1/2">
+        <input onChange={fileSelected} type="file" accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+        <input value={caption} onChange={e => setCaption(e.target.value)} type="text" placeholder='Descrição' className="block w-full p-2 text-sm text-gray-500 border border-gray-300 rounded" />
+        <select onChange={categorySelected} className="block w-full p-2 text-sm text-gray-500 border border-gray-300 rounded">
+          <option value="">Selecione uma categoria</option>
+          <option value="1">Ícones</option>
+          <option value="2">Trabalho</option>
+          <option value="3">Educação</option>
+          <option value="4">Outros</option>
+        </select>
+        <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Enviar</button>
+      </form>
     </div>
   )
 }
