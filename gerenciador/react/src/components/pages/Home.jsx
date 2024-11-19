@@ -38,19 +38,35 @@ function App() {
     setPosts(posts.filter(post => post.id !== id))
   }
 
+  const downloadFile = async ({id}) => {
+    try {
+      const response = await axios.get(`/api/posts/${id}/image`, { responseType: 'blob' })
+      const blob = new Blob([response.data], { type: response.headers['content-type'] })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `post-${id}.${response.headers['content-type'].split('/')[1]}`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
   const postActions = {
     editPostClicked,
-    deletePostClicked
+    deletePostClicked,
+    downloadFile
   }
 
   return (
-    <div className="App">
+    <div className="App h-screen bg-gray-100">
 
-      <div className="flex flex-col space-y-100 items-center divide-y">
+      <div className="flex flex-wrap justify-center space-y-4 items-center divide-y divide-gray-200 py-10">
         {posts.map(post => (
-          <div key={`post-${post.id}`} className="px-5 py-14">
+          <div key={`post-${post.id}`} className="px-5 py-5 bg-white rounded-md shadow-md w-300 mx-4 my-4">
 
-            <SinglePost className="relative" post={post} category={categories[post.categoryId]} deletePostClicked={deletePostClicked}></SinglePost>
+            <SinglePost className="relative" post={post} category={categories[post.categoryId]} deletePostClicked={deletePostClicked} downloadFile={postActions.downloadFile}></SinglePost>
             
           </div>
         ))}

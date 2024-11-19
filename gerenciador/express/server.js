@@ -61,4 +61,13 @@ app.get("/api/categories", async (req, res) => {
   res.send(categories)
 })
 
+app.get("/api/posts/:id/image", async (req, res) => {
+  const id = +req.params.id
+  const post = await prisma.posts.findUnique({where: {id}}) 
+
+  const imageUrl = await getObjectSignedUrl(post.imageName)
+
+  res.redirect(imageUrl)
+})
+
 app.listen(8080, () => console.log("listening on port 8080"))
