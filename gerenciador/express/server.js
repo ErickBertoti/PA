@@ -23,10 +23,10 @@ app.get("/api/posts", async (req, res) => {
   res.send(posts)
 })
 
-
 app.post('/api/posts', upload.single('image'), async (req, res) => {
   const file = req.file
   const caption = req.body.caption
+  const categoryId = req.body.categoryId
   const imageName = generateFileName()
 
   const fileBuffer = await sharp(file.buffer)
@@ -39,6 +39,7 @@ app.post('/api/posts', upload.single('image'), async (req, res) => {
     data: {
       imageName,
       caption,
+      categoryId: +categoryId
     }
   })
   

@@ -2,11 +2,11 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 
-
 export default function NewPost() {  
 
   const [file, setFile] = useState()
   const [caption, setCaption] = useState("")
+  const [categoryId, setCategoryId] = useState("")
 
   const navigate = useNavigate()
 
@@ -16,6 +16,7 @@ export default function NewPost() {
     const formData = new FormData();
     formData.append("image", file)
     formData.append("caption", caption)
+    formData.append("categoryId", categoryId)
     await axios.post("/api/posts", formData, { headers: {'Content-Type': 'multipart/form-data'}})
 
     navigate("/")
@@ -23,8 +24,13 @@ export default function NewPost() {
 
   const fileSelected = event => {
     const file = event.target.files[0]
-		setFile(file)
-	}
+    setFile(file)
+  }
+
+  const categorySelected = event => {
+    const categoryId = event.target.value
+    setCategoryId(categoryId)
+  }
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -32,6 +38,13 @@ export default function NewPost() {
         <form onSubmit={submit} style={{width:650}} className="flex flex-col space-y-5 px-5 py-14">
           <input onChange={fileSelected} type="file" accept="image/*"></input>
           <input value={caption} onChange={e => setCaption(e.target.value)} type="text" placeholder='Descrição'></input>
+          <select onChange={categorySelected}>
+            <option value="">Selecione uma categoria</option>
+            <option value="1">Ícones</option>
+            <option value="2">Trabalho</option>
+            <option value="3">Educação</option>
+            <option value="4">Outros</option>
+            </select>
           <button type="submit">Enviar</button>
         </form>
 

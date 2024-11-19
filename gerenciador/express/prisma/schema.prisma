@@ -12,4 +12,48 @@ model Posts {
   imageName     String
   caption       String
   created       DateTime @default(now())
+  category Category @relation(fields: [categoryId], references: [id])
+  categoryId Int
+}
+
+model Category {
+  id       Int   @id @default(autoincrement())
+  name     String
+  documents Posts[]
+}
+
+model Tool {
+  id               Int   @id @default(autoincrement())
+  name             String
+  description      String
+  responsible      String
+  acquisitionDate  DateTime
+  expirationDate   DateTime
+}
+
+model Training {
+  id          Int   @id @default(autoincrement())
+  title       String
+  description String
+  trainingLinks TrainingLink[]
+}
+
+model TrainingLink {
+  id       Int   @id @default(autoincrement())
+  url      String
+  training Training @relation(fields: [trainingId], references: [id])
+  trainingId Int
+}
+
+model Permission {
+  id       Int   @id @default(autoincrement())
+  name     String
+  profileId Int
+  profile   Profile   @relation(fields: [profileId], references: [id])
+}
+
+model Profile {
+  id       Int   @id @default(autoincrement())
+  name     String
+  permissions Permission[]
 }
