@@ -15,6 +15,8 @@ AWS_BUCKET_NAME='pa-gerenciador-arquivos'
 AWS_BUCKET_REGION='us-east-1'
 AWS_ACCESS_KEY='AKIAWPPO6RMPMCLURGPX'
 AWS_SECRET_ACCESS_KEY='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'
+
+JWT_SECRET_KEY='fLz8@iC6zP#m0U76vx3h23Qx0VjzE8Fr'
 ```
 
 Adicione a Url do banco local que criou. A [database url](https://www.prisma.io/docs/concepts/database-connectors/mysql#base-url-and-path) tem que ser pra um banco MySQL, se quiser usar outro precisa alterar o prisma antes. 
