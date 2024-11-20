@@ -1,15 +1,18 @@
 import { Disclosure } from '@headlessui/react'
 import { MenuIcon, XIcon } from '@heroicons/react/outline'
+import { Link } from 'react-router-dom';
+
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function NavBar({onHome, onNewPost}) {
+export default function NavBar() {
 
   const navigation = [
-    { name: 'Registrar novo arquivo', current: false, onClick: onNewPost},
-  ] 
+    { name: 'Home', current: false, href: '/' },
+    { name: 'Registrar novo arquivo', current: false, href: '/newPost' },
+  ]
 
   return (
     <Disclosure as="nav" className="bg-gray-800 py-4">
@@ -29,7 +32,7 @@ export default function NavBar({onHome, onNewPost}) {
                 </Disclosure.Button>
               </div>
               <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
-                <button onClick={onHome} className="flex-shrink-0 flex items-center text-white hover:text-gray-300">
+                <Link to="/" className="flex-shrink-0 flex items-center text-white hover:text-gray-300">
                   <img
                     className="block lg:hidden h-8 w-auto"
                     src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg"
@@ -38,13 +41,13 @@ export default function NavBar({onHome, onNewPost}) {
 
                   <h1 className="text-2xl font-bold text-white ml-2">Gerenciador de Arquivos</h1>
 
-                </button>
+                </Link>
                 <div className="hidden sm:block sm:ml-6">
                   <div className="flex space-x-4">
                     {navigation.map((item) => (
-                      <button
+                      <Link
                         key={item.name}
-                        onClick={item.onClick}
+                        to={item.href}
                         className={classNames(
                           item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                           'px-3 py-2 rounded-md text-sm font-medium'
@@ -52,7 +55,7 @@ export default function NavBar({onHome, onNewPost}) {
                         aria-current={item.current ? 'page' : undefined}
                       >
                         {item.name}
-                      </button>
+                      </Link>
                     ))}
                   </div>
                 </div>
@@ -69,7 +72,7 @@ export default function NavBar({onHome, onNewPost}) {
                 <Disclosure.Button
                   key={item.name}
                   as="a"
-                  onClick={item.onClick}
+                  href={item.href}
                   className={classNames(
                     item.current ? 'bg-gray-900 text-white' : 'text-gray-300 hover:bg-gray-700 hover:text-white',
                     'block px-3 py-2 rounded-md text-base font-medium'

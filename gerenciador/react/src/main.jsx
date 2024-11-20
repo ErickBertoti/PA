@@ -3,29 +3,42 @@ import ReactDOM from 'react-dom/client'
 
 import Home from './components/pages/Home'
 import NewPost from './components/pages/NewPost'
+import Login from './components/pages/Login'
+import Register from './components/pages/Register'
 
 import Layout from './Layout'
+import ProtectedRoute from './components/ProtectedRoute'
 
 import './index.css'
 
-
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-} from "react-router-dom";
-
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="newPost" element={<NewPost />} />
-      </Route>
-    </Routes>
-  </BrowserRouter>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/" element={<Layout />}>
+          <Route
+            index
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="newPost"
+            element={
+              <ProtectedRoute>
+                <NewPost />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+      </Routes>
+    </Router>
   </React.StrictMode>
-)
+);

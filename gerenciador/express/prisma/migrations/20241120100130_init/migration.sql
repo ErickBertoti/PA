@@ -1,11 +1,13 @@
-/*
-  Warnings:
+-- CreateTable
+CREATE TABLE `Posts` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `imageName` VARCHAR(191) NOT NULL,
+    `caption` VARCHAR(191) NOT NULL,
+    `created` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `categoryId` INTEGER NOT NULL,
 
-  - Added the required column `categoryId` to the `Posts` table without a default value. This is not possible if the table is not empty.
-
-*/
--- AlterTable
-ALTER TABLE `posts` ADD COLUMN `categoryId` INTEGER NOT NULL;
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `Category` (
@@ -58,7 +60,11 @@ CREATE TABLE `Permission` (
 CREATE TABLE `Profile` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `password` VARCHAR(191) NOT NULL,
+    `createdAt` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
 
+    UNIQUE INDEX `Profile_email_key`(`email`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
