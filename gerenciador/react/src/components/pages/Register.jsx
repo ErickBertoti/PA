@@ -7,20 +7,42 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    // Verifica se algum campo está vazio
+    if (!name || !email || !password) {
+      setError('Todos os campos devem ser preenchidos.');
+      return;
+    }
+
     try {
       const response = await axios.post('/api/signup', {
         name,
         email,
         password,
       });
+
       console.log(response.data);
-      // Redirecionar para a página de login
-      window.location.href = '/login';
+
+      // Exibe mensagem de sucesso
+      setSuccess('Cadastro realizado com sucesso! Você será redirecionado.');
+
+      // Limpa os campos após sucesso
+      setName('');
+      setEmail('');
+      setPassword('');
+      setError(null);
+
+      // Redireciona para login após 3 segundos
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 3000);
     } catch (error) {
-      setError(error.message);
+      setSuccess(null);
+      setError(error.response?.data?.error || 'Erro ao realizar cadastro.');
     }
   };
 
@@ -85,8 +107,12 @@ const Register = () => {
               Já tem uma conta? Faça login
             </Link>
           </div>
+          {/* Exibe mensagem de erro ou sucesso */}
           {error && (
-            <div className="mt-4 text-red-500 text-sm">{error}</div>
+            <div className="mt-4 text-red-500 text-sm border border-red-400 bg-red-100 p-3 rounded">{error}</div>
+          )}
+          {success && (
+            <div className="mt-4 text-green-500 text-sm border border-green-400 bg-green-100 p-3 rounded">{success}</div>
           )}
         </form>
       </div>

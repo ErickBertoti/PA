@@ -67,17 +67,30 @@ function App() {
   }
 
   return (
-    <div className="App h-screen bg-gray-100">
+    <div className="App h-screen bg-gray-100 flex flex-col items-center justify-center">
 
-      <div className="flex flex-wrap justify-center space-y-4 items-center divide-y divide-gray-200 py-10">
-        {posts.map(post => (
-          <div key={`post-${post.id}`} className="px-5 py-5 bg-white rounded-md shadow-md w-300 mx-4 my-4">
+      {posts.length === 0 ? (
+        <div className="text-center p-10 bg-white rounded-md shadow-md">
+          <h1 className="text-3xl font-bold text-gray-800">Nenhum documento registrado</h1>
+          <p className="text-gray-600 mt-4">Por favor, adicione um novo documento para começar a gerenciar seus arquivos.</p>
+          <button
+            onClick={() => navigate('/newPost')}
+            className="mt-6 px-6 py-3 bg-blue-600 text-white font-medium rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Registrar Novo Arquivo
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-wrap justify-center space-y-4 items-center divide-y divide-gray-200 py-10">
+          {posts.map(post => (
+            <div key={`post-${post.id}`} className="px-5 py-5 bg-white rounded-md shadow-md w-300 mx-4 my-4">
 
-            <SinglePost className="relative" post={post} category={categories[post.categoryId]} deletePostClicked={deletePostClicked} downloadFile={postActions.downloadFile}></SinglePost>
-            
-          </div>
-        ))}
-      </div>
+              <SinglePost className="relative" post={post} category={categories[post.categoryId]} deletePostClicked={deletePostClicked} downloadFile={postActions.downloadFile}></SinglePost>
+              
+            </div>
+          ))}
+        </div>
+      )}
 
     </div>
   )

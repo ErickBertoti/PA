@@ -1,31 +1,46 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // Importando useNavigate
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
-  const navigate = useNavigate();  // Hook de navegação
+  const [success, setSuccess] = useState(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    // Verificação: nenhum campo pode estar vazio
+    if (!email || !password) {
+      setError('Todos os campos devem ser preenchidos.');
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:8080/api/login', {
         email,
         password,
       });
 
-      console.log(response.data); // Para fins de depuração, pode ser removido
+      console.log(response.data);
       const { token } = response.data;
 
       // Armazenar o token no localStorage
       localStorage.setItem('token', token);
 
-      // Usar navigate para redirecionar sem recarregar a página
-      navigate('/'); 
+      // Exibe mensagem de sucesso
+      setSuccess('Login realizado com sucesso! Redirecionando...');
+      setTimeout(() => {
+        navigate('/'); // Redireciona para a página inicial
+      }, 2000);
     } catch (error) {
-      setError(error.response ? error.response.data.error : error.message);
+      setError(
+        error.response ? error.response.data.error : 'Erro ao realizar o login. Tente novamente.'
+      );
     }
   };
 
@@ -75,10 +90,17 @@ const Login = () => {
               Não tem uma conta? Cadastre-se
             </Link>
           </div>
-          {error && (
-            <div className="mt-4 text-red-500 text-sm">{error}</div>
-          )}
         </form>
+        {error && (
+          <div className="mt-4 text-red-500 text-sm border border-red-400 bg-red-100 p-3 rounded">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="mt-4 text-green-500 text-sm border border-green-400 bg-green-100 p-3 rounded">
+            {success}
+          </div>
+        )}
       </div>
     </div>
   );
