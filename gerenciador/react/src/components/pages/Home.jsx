@@ -32,12 +32,19 @@ function App() {
     navigate("/editPost/" + id)
     console.log(`editPostClicked = (${id})`)
   }
-  const deletePostClicked = async ({id}) => {
-    console.log(`deletePostClicked = (${id})`)
-    await axios.delete("/api/posts/" + id)
-    setPosts(posts.filter(post => post.id !== id))
-  }
 
+  const deletePostClicked = async ({ id }) => {
+    console.log(`deletePostClicked = (${id})`);
+  
+    try {
+      await axios.delete(`/api/posts/${id}`);
+      setPosts(posts.filter(post => post.id !== id)); // Atualiza a lista localmente
+    } catch (error) {
+      console.error(error.response?.data || error.message); // Log de erros
+      alert("Não foi possível deletar o post. Verifique sua autenticação.");
+    }
+  };
+  
   const downloadFile = async ({id}) => {
     try {
       const response = await axios.get(`/api/posts/${id}/image`, { responseType: 'blob' })
