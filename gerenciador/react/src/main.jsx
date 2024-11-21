@@ -5,6 +5,8 @@ import Home from './components/pages/Home'
 import NewPost from './components/pages/NewPost'
 import Login from './components/pages/Login'
 import Register from './components/pages/Register'
+import ToolsAndLicenses from './components/pages/ToolsAndLicenses'
+
 import axios from 'axios';
 
 import Layout from './Layout'
@@ -21,7 +23,6 @@ axios.interceptors.request.use(config => {
   }
   return config;
 });
-
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -46,6 +47,14 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               </ProtectedRoute>
             }
           />
+          <Route
+            path="tools"
+            element={
+              <ProtectedRoute>
+                <ToolsAndLicenses />
+              </ProtectedRoute>
+            }
+          /> 
         </Route>
       </Routes>
     </Router>

@@ -20,7 +20,9 @@ export default function NavBar() {
   const navigation = [
     { name: 'Home', current: false, href: '/' },
     { name: 'Registrar novo arquivo', current: false, href: '/newPost' },
+    { name: 'Ferramentas e Licenças', current: false, href: '/tools' },  // Novo item de navegação
   ];
+  
 
   return (
     <Disclosure as="nav" className="bg-gray-800 py-4">

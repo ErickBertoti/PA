@@ -97,6 +97,59 @@ app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
   res.send(post);
 });
 
+// Rota para obter ferramentas e licenças
+app.get("/api/tools", authenticateToken, async (req, res) => {
+  const tools = await prisma.tool.findMany();
+  res.send(tools);
+});
+
+// Rota para criar uma nova ferramenta/licença
+app.post("/api/tools", authenticateToken, async (req, res) => {
+  const { name, description, responsible, acquisitionDate, expirationDate } = req.body;
+
+  const tool = await prisma.tool.create({
+    data: {
+      name,
+      description,
+      responsible,
+      acquisitionDate: new Date(acquisitionDate),
+      expirationDate: new Date(expirationDate),
+    },
+  });
+
+  res.status(201).send(tool);
+});
+
+// Rota para atualizar uma ferramenta/licença
+app.put("/api/tools/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { name, description, responsible, acquisitionDate, expirationDate } = req.body;
+
+  const tool = await prisma.tool.update({
+    where: { id: Number(id) },
+    data: {
+      name,
+      description,
+      responsible,
+      acquisitionDate: new Date(acquisitionDate),
+      expirationDate: new Date(expirationDate),
+    },
+  });
+
+  res.send(tool);
+});
+
+// Rota para deletar uma ferramenta/licença
+app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const tool = await prisma.tool.delete({
+    where: { id: Number(id) },
+  });
+
+  res.send(tool);
+});
+
+
 // Rota para obter categorias
 app.get("/api/categories", async (req, res) => {
   const categories = await prisma.category.findMany();
