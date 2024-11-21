@@ -2,6 +2,8 @@ import { Disclosure } from '@headlessui/react'
 import { MenuIcon, XIcon } from '@heroicons/react/outline'
 import { Link } from 'react-router-dom';
 
+import logoDark from './assets/logo_dark.png'
+
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ')
@@ -34,9 +36,9 @@ export default function NavBar() {
               <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
                 <Link to="/" className="flex-shrink-0 flex items-center text-white hover:text-gray-300">
                   <img
-                    className="block lg:hidden h-8 w-auto"
-                    src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg"
-                    alt="Workflow"
+                    className="block h-8 w-auto"
+                    src={logoDark} // Substitui o SVG pela imagem importada
+                    alt="DMS"
                   />
 
                   <h1 className="text-2xl font-bold text-white ml-2">Gerenciador de Arquivos</h1>
