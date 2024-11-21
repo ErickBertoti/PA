@@ -45,20 +45,28 @@ function App() {
     }
   };
   
-  const downloadFile = async ({id}) => {
+  const downloadFile = async ({ id }) => {
     try {
-      const response = await axios.get(`/api/posts/${id}/image`, { responseType: 'blob' })
-      const blob = new Blob([response.data], { type: response.headers['content-type'] })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `post-${id}.${response.headers['content-type'].split('/')[1]}`
-      a.click()
-      URL.revokeObjectURL(url)
+      // Obtém a URL assinada da API
+      const { data } = await axios.get(`/api/posts/${id}/image`);
+      const fileUrl = data.url;
+  
+      // Faz o download do arquivo
+      const response = await axios.get(fileUrl, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const url = URL.createObjectURL(blob);
+  
+      // Cria o link para download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `post-${id}.${response.headers['content-type'].split('/')[1]}`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (error) {
-      console.error(error)
+      console.error("Erro ao baixar arquivo:", error);
     }
-  }
+  };
+  
 
   const postActions = {
     editPostClicked,

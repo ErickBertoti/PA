@@ -63,4 +63,4 @@ export default function SinglePost({ className, post, category, deletePostClicke
       </div>
     </div>
   );
-}
+} 

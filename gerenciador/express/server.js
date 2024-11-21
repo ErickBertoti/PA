@@ -149,6 +149,111 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
   res.send(tool);
 });
 
+// Rota para obter todos os treinamentos
+app.get("/api/trainings", async (req, res) => {
+  try {
+    const trainings = await prisma.training.findMany();
+    res.json(trainings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao buscar treinamentos" });
+  }
+});
+
+// Rota para criar um novo treinamento (exige autenticação)
+app.post("/api/trainings", authenticateToken, upload.single('image'), async (req, res) => {
+  const { title, description, links, categoryId } = req.body;
+  const file = req.file;
+  const imageName = file ? generateFileName() : null;
+
+  let imageUrl = null;
+  if (file) {
+    const fileBuffer = await sharp(file.buffer)
+      .resize({ height: 1920, width: 1080, fit: "contain" })
+      .toBuffer();
+
+    await uploadFile(fileBuffer, imageName, file.mimetype);
+    imageUrl = await getObjectSignedUrl(imageName);
+  }
+
+  try {
+    const training = await prisma.training.create({
+      data: {
+        title,
+        description,
+        links: JSON.stringify(links), // Armazena links como JSON
+        categoryId: +categoryId,
+        imageName,
+        imageUrl, // Armazena a URL da imagem se houver
+      },
+    });
+
+    res.status(201).json(training);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao criar treinamento" });
+  }
+});
+
+// Rota para atualizar um treinamento
+app.put("/api/trainings/:id", authenticateToken, upload.single('image'), async (req, res) => {
+  const { title, description, links, categoryId } = req.body;
+  const id = +req.params.id;
+  const file = req.file;
+
+  let imageName = null;
+  let imageUrl = null;
+  
+  if (file) {
+    imageName = generateFileName();
+    const fileBuffer = await sharp(file.buffer)
+      .resize({ height: 1920, width: 1080, fit: "contain" })
+      .toBuffer();
+    
+    await uploadFile(fileBuffer, imageName, file.mimetype);
+    imageUrl = await getObjectSignedUrl(imageName);
+  }
+
+  try {
+    const training = await prisma.training.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        links: JSON.stringify(links),
+        categoryId: +categoryId,
+        imageName,
+        imageUrl,
+      },
+    });
+
+    res.json(training);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao atualizar treinamento" });
+  }
+});
+
+// Rota para deletar um treinamento
+app.delete("/api/trainings/:id", authenticateToken, async (req, res) => {
+  const id = +req.params.id;
+  
+  try {
+    const training = await prisma.training.findUnique({ where: { id } });
+
+    if (training?.imageName) {
+      await deleteFile(training.imageName); // Apaga a imagem associada
+    }
+
+    await prisma.training.delete({ where: { id } });
+
+    res.json({ message: "Treinamento deletado com sucesso" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao deletar treinamento" });
+  }
+});
+
 
 // Rota para obter categorias
 app.get("/api/categories", async (req, res) => {
@@ -158,13 +263,30 @@ app.get("/api/categories", async (req, res) => {
 
 // Rota para obter a imagem de um post
 app.get("/api/posts/:id/image", async (req, res) => {
-  const id = +req.params.id;
-  const post = await prisma.posts.findUnique({ where: { id } });
+  try {
+    const id = parseInt(req.params.id, 10); // Conversão segura do ID para inteiro
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
 
-  const imageUrl = await getObjectSignedUrl(post.imageName);
+    const post = await prisma.posts.findUnique({ where: { id } });
+    if (!post) {
+      return res.status(404).json({ error: "Post não encontrado" });
+    }
 
-  res.redirect(imageUrl);
+    const imageUrl = await getObjectSignedUrl(post.imageName); // Gere a URL assinada
+    if (!imageUrl) {
+      return res.status(500).json({ error: "Erro ao gerar URL da imagem" });
+    }
+
+    // Retorne a URL assinada
+    res.json({ url: imageUrl });
+  } catch (error) {
+    console.error("Erro na rota de imagem:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
 });
+
 
 // Rota para criar um novo usuário (signup)
 app.post('/api/signup', async (req, res) => {

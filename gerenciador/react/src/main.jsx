@@ -6,6 +6,7 @@ import NewPost from './components/pages/NewPost'
 import Login from './components/pages/Login'
 import Register from './components/pages/Register'
 import ToolsAndLicenses from './components/pages/ToolsAndLicenses'
+import Training from './components/pages/Training' // Importa a nova página
 
 import axios from 'axios';
 
@@ -54,7 +55,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <ToolsAndLicenses />
               </ProtectedRoute>
             }
-          /> 
+          />
+          <Route
+            path="training"  // Nova página
+            element={
+              <ProtectedRoute>
+                <Training />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
     </Router>
