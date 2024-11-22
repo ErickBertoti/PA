@@ -13,8 +13,8 @@ DATABASE_URL='mysql://root:senha@localhost:3306/nomedobanco'
 
 AWS_BUCKET_NAME='pa-gerenciador-arquivos'
 AWS_BUCKET_REGION='us-east-1'
-AWS_ACCESS_KEY='AKIAWPPO6RMPKKDLBDFT'
-AWS_SECRET_ACCESS_KEY='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'
+
+Também iriam aqui as chaves da AWS, como são privadas, pedimos que peça à nossa equipe se for necessário para você.
 
 JWT_SECRET_KEY='fLz8@iC6zP#m0U76vx3h23Qx0VjzE8Fr'
 ```
