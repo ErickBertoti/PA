@@ -20,6 +20,7 @@ model Category {
   id       Int   @id @default(autoincrement())
   name     String
   documents Posts[]
+  Training Training[]
 }
 
 model Tool {
@@ -32,18 +33,23 @@ model Tool {
 }
 
 model Training {
-  id          Int   @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   title       String
   description String
-  trainingLinks TrainingLink[]
+  imageName   String?       // Nome do arquivo da imagem
+  imageUrl    String?       // URL pública da imagem
+  trainingLinks TrainingLink[]  // Relacionamento com os links de treinamento
+  category    Category      @relation(fields: [categoryId], references: [id])
+  categoryId  Int
 }
 
 model TrainingLink {
-  id       Int   @id @default(autoincrement())
-  url      String
-  training Training @relation(fields: [trainingId], references: [id])
+  id         Int       @id @default(autoincrement())
+  url        String
+  training   Training  @relation(fields: [trainingId], references: [id])
   trainingId Int
 }
+
 
 model Permission {
   id       Int   @id @default(autoincrement())

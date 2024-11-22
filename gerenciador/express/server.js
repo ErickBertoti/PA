@@ -150,6 +150,7 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
 });
 
 // Rota para obter todos os treinamentos
+// Esta rota não exige autenticação, e retorna todos os treinamentos cadastrados.
 app.get("/api/trainings", async (req, res) => {
   try {
     const trainings = await prisma.training.findMany();
@@ -168,24 +169,29 @@ app.post("/api/trainings", authenticateToken, upload.single('image'), async (req
 
   let imageUrl = null;
   if (file) {
+    // Processa a imagem antes de enviá-la para o S3.
     const fileBuffer = await sharp(file.buffer)
       .resize({ height: 1920, width: 1080, fit: "contain" })
       .toBuffer();
 
-    await uploadFile(fileBuffer, imageName, file.mimetype);
-    imageUrl = await getObjectSignedUrl(imageName);
+    await uploadFile(fileBuffer, imageName, file.mimetype); // Faz upload da imagem
+    imageUrl = await getObjectSignedUrl(imageName); // Obtém URL pública da imagem
   }
 
   try {
+    // Cria um novo treinamento no banco de dados, incluindo links de treinamento associados.
     const training = await prisma.training.create({
       data: {
         title,
         description,
-        links: JSON.stringify(links), // Armazena links como JSON
         categoryId: +categoryId,
         imageName,
-        imageUrl, // Armazena a URL da imagem se houver
+        imageUrl, // Armazena a URL da imagem
+        trainingLinks: {
+          create: JSON.parse(links).map((link) => ({ url: link })), // Cria os registros na tabela TrainingLink
+        },
       },
+      include: { trainingLinks: true }, // Inclui os links criados no retorno
     });
 
     res.status(201).json(training);
@@ -205,26 +211,32 @@ app.put("/api/trainings/:id", authenticateToken, upload.single('image'), async (
   let imageUrl = null;
   
   if (file) {
+    // Processa a imagem antes de enviá-la para o S3.
     imageName = generateFileName();
     const fileBuffer = await sharp(file.buffer)
       .resize({ height: 1920, width: 1080, fit: "contain" })
       .toBuffer();
     
-    await uploadFile(fileBuffer, imageName, file.mimetype);
-    imageUrl = await getObjectSignedUrl(imageName);
+    await uploadFile(fileBuffer, imageName, file.mimetype); // Faz upload da nova imagem
+    imageUrl = await getObjectSignedUrl(imageName); // Obtém URL pública da nova imagem
   }
 
   try {
+    // Atualiza o treinamento no banco de dados com os novos dados e links.
     const training = await prisma.training.update({
       where: { id },
       data: {
         title,
         description,
-        links: JSON.stringify(links),
         categoryId: +categoryId,
         imageName,
         imageUrl,
+        trainingLinks: {
+          deleteMany: {}, // Remove todos os links antigos
+          create: JSON.parse(links).map((link) => ({ url: link })), // Adiciona novos links
+        },
       },
+      include: { trainingLinks: true }, // Inclui os links atualizados no retorno
     });
 
     res.json(training);
@@ -239,12 +251,19 @@ app.delete("/api/trainings/:id", authenticateToken, async (req, res) => {
   const id = +req.params.id;
   
   try {
-    const training = await prisma.training.findUnique({ where: { id } });
+    // Obtém o treinamento, incluindo os links associados.
+    const training = await prisma.training.findUnique({ 
+      where: { id },
+      include: { trainingLinks: true }, // Obtém os links associados ao treinamento
+    });
 
     if (training?.imageName) {
-      await deleteFile(training.imageName); // Apaga a imagem associada
+      await deleteFile(training.imageName); // Apaga a imagem associada ao treinamento
     }
 
+    // Remove os links associados ao treinamento
+    await prisma.trainingLink.deleteMany({ where: { trainingId: id } });
+    // Deleta o próprio treinamento
     await prisma.training.delete({ where: { id } });
 
     res.json({ message: "Treinamento deletado com sucesso" });
@@ -253,7 +272,6 @@ app.delete("/api/trainings/:id", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Erro ao deletar treinamento" });
   }
 });
-
 
 // Rota para obter categorias
 app.get("/api/categories", async (req, res) => {

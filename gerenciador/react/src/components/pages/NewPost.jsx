@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import axios from 'axios';
+import { Upload, File, ImageIcon, Trash2, Check, Loader2 } from 'lucide-react';
 
 export default function NewPost() {
   const [file, setFile] = useState(null);
@@ -7,7 +8,9 @@ export default function NewPost() {
   const [categoryId, setCategoryId] = useState('');
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const fileInputRef = useRef(null);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -24,6 +27,7 @@ export default function NewPost() {
     formData.append('categoryId', categoryId);
 
     setLoading(true);
+    setUploadProgress(0);
     setMessage({ type: '', text: '' });
 
     try {
@@ -32,22 +36,32 @@ export default function NewPost() {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
         },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        }
       });
 
       setMessage({ type: 'success', text: 'Arquivo enviado com sucesso!' });
       setFile(null);
       setCaption('');
       setCategoryId('');
+      setUploadProgress(100);
     } catch (err) {
       setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao enviar o arquivo.' });
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+        setUploadProgress(0);
+      }, 1500);
     }
   };
 
   const handleFileSelect = (event) => {
-    const file = event.target.files[0];
-    setFile(file);
+    const selectedFile = event.target.files[0];
+    setFile(selectedFile);
   };
 
   const handleDragOver = (event) => {
@@ -62,84 +76,155 @@ export default function NewPost() {
   const handleDrop = (event) => {
     event.preventDefault();
     setDragging(false);
-    const file = event.dataTransfer.files[0];
-    setFile(file);
+    const droppedFile = event.dataTransfer.files[0];
+    setFile(droppedFile);
+  };
+
+  const clearFile = () => {
+    setFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const categorySelected = (event) => {
-    const categoryId = event.target.value;
-    setCategoryId(categoryId);
+    const selectedCategoryId = event.target.value;
+    setCategoryId(selectedCategoryId);
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <form
-        onSubmit={submit}
-        className="flex flex-col space-y-5 p-5 bg-white rounded shadow-md w-full max-w-lg"
-      >
-        {message.text && (
-          <div
-            className={`p-3 text-sm rounded ${
-              message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-            }`}
-          >
-            {message.text}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 transform transition-all duration-300 hover:scale-105">
+        <form onSubmit={submit} className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center justify-center space-x-2">
+              <Upload className="h-6 w-6 text-blue-600" />
+              <span>Upload de Arquivo</span>
+            </h2>
+            <p className="text-sm text-gray-500 mt-2">Compartilhe seus arquivos facilmente</p>
           </div>
-        )}
 
-        <div>
-          <label
-            htmlFor="file"
-            className={`block p-10 text-center border-2 ${
-              dragging ? 'border-blue-500' : 'border-gray-300'
-            } border-dashed rounded transition duration-300`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            {file ? (
-              <span className="font-bold text-gray-700">{file.name}</span>
-            ) : (
-              'Arraste e solte o arquivo aqui ou clique para selecionar'
-            )}
-          </label>
+          {message.text && (
+            <div
+              className={`p-3 text-sm rounded-lg flex items-center space-x-2 ${
+                message.type === 'success' 
+                  ? 'bg-green-100 text-green-700' 
+                  : 'bg-red-100 text-red-700'
+              }`}
+            >
+              {message.type === 'success' ? (
+                <Check className="h-5 w-5" />
+              ) : (
+                <Trash2 className="h-5 w-5" />
+              )}
+              <span>{message.text}</span>
+            </div>
+          )}
+
+          {loading && (
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-500 ease-in-out" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          )}
+
+          <div>
+            <input
+              ref={fileInputRef}
+              id="file"
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            <label
+              htmlFor="file"
+              className={`
+                flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg cursor-pointer
+                ${dragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-gray-50'}
+                hover:border-blue-500 hover:bg-blue-50 transition duration-300
+              `}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {file ? (
+                <div className="flex items-center space-x-3">
+                  <File className="h-8 w-8 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700">{file.name}</p>
+                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      clearFile();
+                    }} 
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center space-y-2">
+                  <ImageIcon className="h-10 w-10 text-gray-400" />
+                  <p className="text-sm text-gray-500 text-center">
+                    Arraste e solte o arquivo aqui ou clique para selecionar
+                  </p>
+                </div>
+              )}
+            </label>
+          </div>
+
           <input
-            id="file"
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            type="text"
+            placeholder="Descrição"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
-        </div>
 
-        <input
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          type="text"
-          placeholder="Descrição"
-          className="block w-full p-2 text-sm text-gray-500 border border-gray-300 rounded"
-        />
-        <select
-          value={categoryId}
-          onChange={categorySelected}
-          required
-          className="block w-full p-2 text-sm text-gray-500 border border-gray-300 rounded"
-        >
-          <option value="">Selecione uma categoria</option>
-          <option value="1">Ícones</option>
-          <option value="2">Trabalho</option>
-          <option value="3">Educação</option>
-          <option value="4">Outros</option>
-        </select>
+          <select
+            value={categoryId}
+            onChange={categorySelected}
+            required
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
+          >
+            <option value="">Selecione uma categoria</option>
+            <option value="1">Ícones</option>
+            <option value="2">Trabalho</option>
+            <option value="3">Educação</option>
+            <option value="4">Outros</option>
+          </select>
 
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          disabled={loading}
-        >
-          {loading ? 'Enviando...' : 'Enviar'}
-        </button>
-      </form>
+          <button
+            type="submit"
+            className={`
+              w-full p-3 rounded-lg text-white font-semibold transition duration-300
+              ${loading 
+                ? 'bg-blue-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700 active:scale-95'
+              } flex items-center justify-center space-x-2
+            `}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <span>Enviando...</span>
+              </>
+            ) : (
+              <>
+                <Upload className="h-5 w-5" />
+                <span>Enviar</span>
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
