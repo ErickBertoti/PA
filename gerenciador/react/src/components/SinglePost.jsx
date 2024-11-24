@@ -1,66 +1,116 @@
-import { TrashIcon, DownloadIcon } from '@heroicons/react/solid';
-import pdfIcon from './assets/pdf_icon.png';
-import xlsxIcon from './assets/xlsx_icon.png';
-import docxIcon from './assets/docx_icon.png';
-import imgIcon from './assets/img_icon.png';
+import { File, Download, Trash2, X, Maximize2 } from 'lucide-react';
+import { useState } from 'react';
 
-export default function SinglePost({ className, post, category, deletePostClicked, downloadFile }) {
-  const { id, caption, fileUrl } = post;
+export default function SinglePost({ post, category, deletePostClicked, downloadFile }) {
+  const { id, caption, imageUrl } = post;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(false);
 
-  // Função para determinar o ícone com base no tipo de arquivo
-  const getFileIcon = (fileUrl) => {
-    if (!fileUrl) return imgIcon; // Retorna o ícone de imagem padrão se o fileUrl não for válido
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
 
-    const extension = fileUrl.split('.').pop().toLowerCase();
-
-    switch (extension) {
-      case 'pdf':
-        return pdfIcon;
-      case 'xlsx':
-        return xlsxIcon;
-      case 'docx':
-        return docxIcon;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return imgIcon;
-      default:
-        return imgIcon; // Ícone padrão para arquivos desconhecidos
-    }
+  const confirmDelete = () => {
+    deletePostClicked({ id });
+    setShowDeleteConfirm(false);
   };
 
   return (
-    <div className={`${className} outline-1 w-300`}>
-      <div className="flex flex-col space-y-2">
-        <div className="flex flex-row items-center space-x-4 cursor-pointer active:opacity-80">
-          {/* Ícone dinâmico baseado no tipo de arquivo */}
-          <img 
-            src={getFileIcon(fileUrl)} 
-            alt="File icon" 
-            className="h-10 w-10"
-          />
-          <p className="text-sm">{category}</p>
-        </div>
-        <p className="text-xs">{caption}</p>
-        <div className="flex flex-row items-end space-x-4 justify-center">
-          {/* Pré-visualização para imagens */}
-          {['jpg', 'jpeg', 'png', 'gif'].includes(fileUrl?.split('.').pop().toLowerCase()) && (
-            <img className="rounded" width="150" height="200" src={fileUrl} alt="Preview" />
-          )}
-          {/* Ações */}
-          <div className="flex flex-col items-center">
-            <TrashIcon
-              className="cursor-pointer hover:text-gray-900 active:text-gray-700 h-10 w-10 text-gray-700"
-              onClick={() => deletePostClicked({ id })}
-            />
-            <DownloadIcon
-              className="cursor-pointer hover:text-gray-900 active:text-gray-700 h-10 w-10 text-gray-700"
+    <>
+      <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden w-64">
+        {/* Cabeçalho com categoria */}
+        <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <File className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-600">{category}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <button
               onClick={() => downloadFile({ id })}
+              className="p-1 rounded-full hover:bg-gray-200 transition-colors duration-200"
+              title="Download arquivo"
+            >
+              <Download className="w-4 h-4 text-gray-500" />
+            </button>
+            <button
+              onClick={handleDelete}
+              className="p-1 rounded-full hover:bg-red-100 transition-colors duration-200"
+              title="Excluir arquivo"
+            >
+              <Trash2 className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        </div>
+
+        {/* Preview da imagem com overlay de ampliação */}
+        {imageUrl && (
+          <div 
+            className="relative h-40 cursor-pointer group"
+            onClick={() => setShowFullImage(true)}
+          >
+            <img
+              src={imageUrl}
+              alt={caption}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+              <Maximize2 className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-all duration-200" />
+            </div>
+          </div>
+        )}
+
+        {/* Legenda */}
+        <div className="px-4 py-2">
+          <p className="text-sm text-gray-600 truncate">{caption}</p>
+        </div>
+      </div>
+
+      {/* Modal de visualização completa */}
+      {showFullImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="relative max-w-4xl w-full">
+            <button
+              onClick={() => setShowFullImage(false)}
+              className="absolute right-2 top-2 p-1 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all duration-200"
+            >
+              <X className="w-5 h-5 text-white" />
+            </button>
+            <img
+              src={imageUrl}
+              alt={caption}
+              className="w-full h-auto rounded-lg"
             />
           </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Confirmar exclusão
+            </h3>
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja excluir este arquivo? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md border border-gray-300 transition-colors duration-200"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors duration-200"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
-} 
+}

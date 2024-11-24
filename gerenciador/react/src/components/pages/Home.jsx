@@ -1,72 +1,68 @@
 import { useEffect, useState } from 'react'
-import axios from 'axios'
-
-import SinglePost from '../SinglePost'
-
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
+import SinglePost from '../SinglePost'
+import { FolderPlus, FileQuestion,Loader2 } from 'lucide-react'
 
 function App() {  
-
   const [posts, setPosts] = useState([])
   const [categories, setCategories] = useState({})
-  let navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true)
+  let navigate = useNavigate()
 
   useEffect(() => {
     async function getPostsAndCategories() {
-      const [postsResponse, categoriesResponse] = await Promise.all([
-        axios.get("/api/posts"),
-        axios.get("/api/categories")
-      ])
+      try {
+        setIsLoading(true)
+        const [postsResponse, categoriesResponse] = await Promise.all([
+          axios.get("/api/posts"),
+          axios.get("/api/categories")
+        ])
 
-      setPosts(postsResponse.data)
-      const categoriesMap = categoriesResponse.data.reduce((acc, category) => {
-        acc[category.id] = category.name
-        return acc
-      }, {})
-      setCategories(categoriesMap)
+        setPosts(postsResponse.data)
+        const categoriesMap = categoriesResponse.data.reduce((acc, category) => {
+          acc[category.id] = category.name
+          return acc
+        }, {})
+        setCategories(categoriesMap)
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error)
+      } finally {
+        setIsLoading(false)
+      }
     }
     getPostsAndCategories()
   }, [])
 
   const editPostClicked = ({id}) => {
     navigate("/editPost/" + id)
-    console.log(`editPostClicked = (${id})`)
   }
 
   const deletePostClicked = async ({ id }) => {
-    console.log(`deletePostClicked = (${id})`);
-  
     try {
-      await axios.delete(`/api/posts/${id}`);
-      setPosts(posts.filter(post => post.id !== id)); // Atualiza a lista localmente
+      await axios.delete(`/api/posts/${id}`)
+      setPosts(posts.filter(post => post.id !== id))
     } catch (error) {
-      console.error(error.response?.data || error.message); // Log de erros
-      alert("Não foi possível deletar o post. Verifique sua autenticação.");
+      console.error(error.response?.data || error.message)
+      alert("Não foi possível deletar o post. Verifique sua autenticação.")
     }
-  };
+  }
   
-  const downloadFile = async ({ id }) => {
+  const downloadFile = async ({id}) => {
     try {
-      // Obtém a URL assinada da API
-      const { data } = await axios.get(`/api/posts/${id}/image`);
-      const fileUrl = data.url;
-  
-      // Faz o download do arquivo
-      const response = await axios.get(fileUrl, { responseType: 'blob' });
-      const blob = new Blob([response.data], { type: response.headers['content-type'] });
-      const url = URL.createObjectURL(blob);
-  
-      // Cria o link para download
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `post-${id}.${response.headers['content-type'].split('/')[1]}`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const response = await axios.get(`/api/posts/${id}/image`, { responseType: 'blob' })
+      const blob = new Blob([response.data], { type: response.headers['content-type'] })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `post-${id}.${response.headers['content-type'].split('/')[1]}`
+      a.click()
+      URL.revokeObjectURL(url)
     } catch (error) {
-      console.error("Erro ao baixar arquivo:", error);
+      console.error(error)
     }
-  };
-  
+  }
+
 
   const postActions = {
     editPostClicked,
@@ -74,32 +70,66 @@ function App() {
     downloadFile
   }
 
-  return (
-    <div className="App h-screen bg-gray-100 flex flex-col items-center justify-center">
+  if (isLoading) {
+    return (
+      <div className="h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+          <p className="text-gray-600 font-medium">Carregando documentos...</p>
+        </div>
+      </div>
+    )
+  }
 
-      {posts.length === 0 ? (
-        <div className="text-center p-10 bg-white rounded-md shadow-md">
-          <h1 className="text-3xl font-bold text-gray-800">Nenhum documento registrado</h1>
-          <p className="text-gray-600 mt-4">Por favor, adicione um novo documento para começar a gerenciar seus arquivos.</p>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Gerenciador de Documentos</h1>
           <button
             onClick={() => navigate('/newPost')}
-            className="mt-6 px-6 py-3 bg-blue-600 text-white font-medium rounded-md shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
           >
-            Registrar Novo Arquivo
+            <FolderPlus className="w-5 h-5 mr-2" />
+            Novo Documento
           </button>
         </div>
-      ) : (
-        <div className="flex flex-wrap justify-center space-y-4 items-center divide-y divide-gray-200 py-10">
-          {posts.map(post => (
-            <div key={`post-${post.id}`} className="px-5 py-5 bg-white rounded-md shadow-md w-300 mx-4 my-4">
 
-              <SinglePost className="relative" post={post} category={categories[post.categoryId]} deletePostClicked={deletePostClicked} downloadFile={postActions.downloadFile}></SinglePost>
-              
-            </div>
-          ))}
-        </div>
-      )}
-
+        {posts.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-sm p-8 text-center">
+            <FileQuestion className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Nenhum documento registrado</h2>
+            <p className="text-gray-600 mb-6">
+              Comece adicionando seu primeiro documento ao sistema.
+            </p>
+            <button
+              onClick={() => navigate('/newPost')}
+              className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+            >
+              <FolderPlus className="w-5 h-5 mr-2" />
+              Registrar Novo Arquivo
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {posts.map(post => (
+              <div 
+                key={`post-${post.id}`}
+                className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
+              >
+                <div className="p-6">
+                  <SinglePost 
+                    post={post} 
+                    category={categories[post.categoryId]} 
+                    deletePostClicked={deletePostClicked} 
+                    downloadFile={postActions.downloadFile}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

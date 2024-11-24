@@ -104,7 +104,7 @@ const Register = () => {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
             </div>
             

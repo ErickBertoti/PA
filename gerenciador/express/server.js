@@ -282,10 +282,7 @@ app.get("/api/categories", async (req, res) => {
 // Rota para obter a imagem de um post
 app.get("/api/posts/:id/image", async (req, res) => {
   try {
-    const id = parseInt(req.params.id, 10); // Conversão segura do ID para inteiro
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "ID inválido" });
-    }
+    const id = +req.params.id
 
     const post = await prisma.posts.findUnique({ where: { id } });
     if (!post) {

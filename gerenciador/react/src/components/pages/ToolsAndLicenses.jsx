@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Pencil, Plus, AlertCircle, Calendar, User, FileText } from 'lucide-react';
+import { Trash2, Pencil, Plus, AlertCircle, Wrench, Calendar, User, FileText, SortAsc, SortDesc } from 'lucide-react';
 import axios from "axios";
 
 const ToolsAndLicenses = () => {
@@ -12,13 +12,60 @@ const ToolsAndLicenses = () => {
     acquisitionDate: "",
     expirationDate: "",
   });
+  const [filteredTools, setFilteredTools] = useState([]);
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: 'asc'
+  });
+  const [filterConfig, setFilterConfig] = useState({
+    responsible: '',
+    usagePeriod: 'all' // 'all', 'longest', 'shortest'
+  });
 
-  // Existing useEffect and helper functions remain the same
   useEffect(() => {
     axios.get("/api/tools")
-      .then((response) => setTools(response.data))
+      .then((response) => {
+        setTools(response.data);
+        setFilteredTools(response.data);
+      })
       .catch((error) => console.error("Erro ao carregar ferramentas:", error));
   }, []);
+
+  useEffect(() => {
+    let filtered = [...tools];
+
+    // Filter by responsible
+    if (filterConfig.responsible) {
+      filtered = filtered.filter(tool => 
+        tool.responsible.toLowerCase().includes(filterConfig.responsible.toLowerCase())
+      );
+    }
+
+    // Calculate and sort by usage period if needed
+    if (filterConfig.usagePeriod !== 'all') {
+      filtered.sort((a, b) => {
+        const periodA = new Date(a.expirationDate) - new Date(a.acquisitionDate);
+        const periodB = new Date(b.expirationDate) - new Date(b.acquisitionDate);
+        return filterConfig.usagePeriod === 'longest' ? periodB - periodA : periodA - periodB;
+      });
+    }
+
+    // Apply sorting if configured
+    if (sortConfig.key) {
+      filtered.sort((a, b) => {
+        if (sortConfig.key === 'acquisitionDate' || sortConfig.key === 'expirationDate') {
+          return sortConfig.direction === 'asc' 
+            ? new Date(a[sortConfig.key]) - new Date(b[sortConfig.key])
+            : new Date(b[sortConfig.key]) - new Date(a[sortConfig.key]);
+        }
+        return sortConfig.direction === 'asc'
+          ? a[sortConfig.key].localeCompare(b[sortConfig.key])
+          : b[sortConfig.key].localeCompare(a[sortConfig.key]);
+      });
+    }
+
+    setFilteredTools(filtered);
+  }, [tools, sortConfig, filterConfig]);
 
   const formatDate = (date) => {
     const d = new Date(date);
@@ -33,6 +80,14 @@ const ToolsAndLicenses = () => {
     return diffDays <= 7 && diffDays > 0;
   };
 
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
+
+  // Rest of the existing functions remain the same
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -77,7 +132,7 @@ const ToolsAndLicenses = () => {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center space-x-3">
-          <Pencil className="h-8 w-8 text-blue-600" />
+          <Wrench className="h-8 w-8 text-blue-600" />
           <h2 className="text-3xl font-bold text-gray-800">Ferramentas e Licenças</h2>
         </div>
         <button
@@ -191,52 +246,123 @@ const ToolsAndLicenses = () => {
           <p className="mt-2 text-lg text-gray-500">Adicione novas ferramentas ou licenças utilizando o botão acima.</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-50 text-gray-700">
-                  <th className="px-6 py-4 text-left font-semibold">Nome</th>
-                  <th className="px-6 py-4 text-left font-semibold">Descrição</th>
-                  <th className="px-6 py-4 text-left font-semibold">Responsável</th>
-                  <th className="px-6 py-4 text-left font-semibold">Aquisição</th>
-                  <th className="px-6 py-4 text-left font-semibold">Expiração</th>
-                  <th className="px-6 py-4 text-center font-semibold">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {tools.map((tool) => (
-                  <tr key={tool.id} className="hover:bg-gray-50 transition-colors duration-200">
-                    <td className="px-6 py-4 whitespace-nowrap">{tool.name}</td>
-                    <td className="px-6 py-4">{tool.description}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{tool.responsible}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{formatDate(tool.acquisitionDate)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{formatDate(tool.expirationDate)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center space-x-3">
-                        {isExpiringSoon(tool.expirationDate) && (
-                          <AlertCircle className="h-5 w-5 text-yellow-500" />
-                        )}
-                        <button
-                          onClick={() => handleEdit(tool)}
-                          className="text-blue-600 hover:text-blue-700 transition-colors duration-200"
-                        >
-                          <Pencil className="h-5 w-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(tool.id)}
-                          className="text-red-600 hover:text-red-700 transition-colors duration-200"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          {/* Filters Section */}
+          <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Filtrar por Responsável
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-2 border rounded-lg"
+                  placeholder="Digite o nome do responsável"
+                  value={filterConfig.responsible}
+                  onChange={(e) => setFilterConfig(prev => ({
+                    ...prev,
+                    responsible: e.target.value
+                  }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Período de Uso
+                </label>
+                <select
+                  className="w-full p-2 border rounded-lg"
+                  value={filterConfig.usagePeriod}
+                  onChange={(e) => setFilterConfig(prev => ({
+                    ...prev,
+                    usagePeriod: e.target.value
+                  }))}
+                >
+                  <option value="all">Todos</option>
+                  <option value="longest">Maior Período</option>
+                  <option value="shortest">Menor Período</option>
+                </select>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Table Section */}
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-gray-50 text-gray-700">
+                    <th className="px-6 py-4 text-left font-semibold">Nome</th>
+                    <th className="px-6 py-4 text-left font-semibold">Descrição</th>
+                    <th className="px-6 py-4 text-left font-semibold">
+                      <button 
+                        className="flex items-center space-x-1"
+                        onClick={() => handleSort('responsible')}
+                      >
+                        <span>Responsável</span>
+                        {sortConfig.key === 'responsible' && (
+                          sortConfig.direction === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold">
+                      <button 
+                        className="flex items-center space-x-1"
+                        onClick={() => handleSort('acquisitionDate')}
+                      >
+                        <span>Aquisição</span>
+                        {sortConfig.key === 'acquisitionDate' && (
+                          sortConfig.direction === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-4 text-left font-semibold">
+                      <button 
+                        className="flex items-center space-x-1"
+                        onClick={() => handleSort('expirationDate')}
+                      >
+                        <span>Expiração</span>
+                        {sortConfig.key === 'expirationDate' && (
+                          sortConfig.direction === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
+                        )}
+                      </button>
+                    </th>
+                    <th className="px-6 py-4 text-center font-semibold">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredTools.map((tool) => (
+                    <tr key={tool.id} className="hover:bg-gray-50 transition-colors duration-200">
+                      <td className="px-6 py-4 whitespace-nowrap">{tool.name}</td>
+                      <td className="px-6 py-4">{tool.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{tool.responsible}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(tool.acquisitionDate)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(tool.expirationDate)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <div className="flex items-center justify-center space-x-3">
+                          {isExpiringSoon(tool.expirationDate) && (
+                            <AlertCircle className="h-5 w-5 text-yellow-500" />
+                          )}
+                          <button
+                            onClick={() => handleEdit(tool)}
+                            className="text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(tool.id)}
+                            className="text-red-600 hover:text-red-700 transition-colors duration-200"
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  FileText, 
-  Lock, 
-  Shield, 
-  User, 
-  Award 
-} from 'lucide-react';
+import { FileText, Lock, Shield, User, Award } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -91,7 +85,7 @@ const Login = () => {
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
             </div>
             
