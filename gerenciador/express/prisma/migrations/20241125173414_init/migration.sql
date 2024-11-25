@@ -35,7 +35,6 @@ CREATE TABLE `Training` (
     `title` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NOT NULL,
     `imageName` VARCHAR(191) NULL,
-    `imageUrl` VARCHAR(191) NULL,
     `categoryId` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)

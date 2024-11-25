@@ -37,7 +37,6 @@ model Training {
   title       String
   description String
   imageName   String?       // Nome do arquivo da imagem
-  imageUrl    String?       // URL pública da imagem
   trainingLinks TrainingLink[]  // Relacionamento com os links de treinamento
   category    Category      @relation(fields: [categoryId], references: [id])
   categoryId  Int

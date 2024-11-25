@@ -149,129 +149,81 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
   res.send(tool);
 });
 
-// Rota para obter todos os treinamentos
-// Esta rota não exige autenticação, e retorna todos os treinamentos cadastrados.
-app.get("/api/trainings", async (req, res) => {
+//treinamentos
+// Adicionar rota para criar treinamento
+app.post('/api/trainings', authenticateToken, upload.single('image'), async (req, res) => {
   try {
-    const trainings = await prisma.training.findMany();
-    res.json(trainings);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao buscar treinamentos" });
-  }
-});
+    const { title, description, categoryId, links } = req.body;
 
-// Rota para criar um novo treinamento (exige autenticação)
-app.post("/api/trainings", authenticateToken, upload.single('image'), async (req, res) => {
-  const { title, description, links, categoryId } = req.body;
-  const file = req.file;
-  const imageName = file ? generateFileName() : null;
+    // Validação dos campos obrigatórios
+    if (!title || !description || !categoryId) {
+      return res.status(400).json({ error: 'Título, descrição e categoria são obrigatórios.' });
+    }
 
-  let imageUrl = null;
-  if (file) {
-    // Processa a imagem antes de enviá-la para o S3.
-    const fileBuffer = await sharp(file.buffer)
-      .resize({ height: 1920, width: 1080, fit: "contain" })
-      .toBuffer();
+    // Garantir que `links` seja um array, mesmo que vazio
+    const linksArray = Array.isArray(links) ? links : [];
 
-    await uploadFile(fileBuffer, imageName, file.mimetype); // Faz upload da imagem
-    imageUrl = await getObjectSignedUrl(imageName); // Obtém URL pública da imagem
-  }
+    let imageName = null;
 
-  try {
-    // Cria um novo treinamento no banco de dados, incluindo links de treinamento associados.
+    if (req.file) {
+      imageName = generateFileName();
+
+      const fileBuffer = await sharp(req.file.buffer)
+        .resize({ height: 1920, width: 1080, fit: 'contain' })
+        .toBuffer();
+
+      await uploadFile(fileBuffer, imageName, req.file.mimetype);
+    }
+
     const training = await prisma.training.create({
       data: {
         title,
         description,
-        categoryId: +categoryId,
         imageName,
-        imageUrl, // Armazena a URL da imagem
+        categoryId: +categoryId,
         trainingLinks: {
-          create: JSON.parse(links).map((link) => ({ url: link })), // Cria os registros na tabela TrainingLink
+          create: linksArray.map((link) => ({ url: link })), // Certifique-se de que linksArray é um array
         },
       },
-      include: { trainingLinks: true }, // Inclui os links criados no retorno
     });
 
     res.status(201).json(training);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao criar treinamento" });
+    console.error('Erro ao criar treinamento:', error);
+    res.status(500).json({ error: 'Erro interno do servidor.' });
   }
 });
 
-// Rota para atualizar um treinamento
-app.put("/api/trainings/:id", authenticateToken, upload.single('image'), async (req, res) => {
-  const { title, description, links, categoryId } = req.body;
-  const id = +req.params.id;
-  const file = req.file;
 
-  let imageName = null;
-  let imageUrl = null;
-  
-  if (file) {
-    // Processa a imagem antes de enviá-la para o S3.
-    imageName = generateFileName();
-    const fileBuffer = await sharp(file.buffer)
-      .resize({ height: 1920, width: 1080, fit: "contain" })
-      .toBuffer();
-    
-    await uploadFile(fileBuffer, imageName, file.mimetype); // Faz upload da nova imagem
-    imageUrl = await getObjectSignedUrl(imageName); // Obtém URL pública da nova imagem
-  }
-
+app.get('/api/trainings', authenticateToken, async (req, res) => {
   try {
-    // Atualiza o treinamento no banco de dados com os novos dados e links.
-    const training = await prisma.training.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        categoryId: +categoryId,
-        imageName,
-        imageUrl,
-        trainingLinks: {
-          deleteMany: {}, // Remove todos os links antigos
-          create: JSON.parse(links).map((link) => ({ url: link })), // Adiciona novos links
-        },
+    const { categoryId } = req.query; // Filtrar por categoria, se necessário
+
+    const filter = categoryId ? { where: { categoryId: +categoryId } } : {};
+
+    const trainings = await prisma.training.findMany({
+      ...filter,
+      include: {
+        trainingLinks: true, // Incluir os links associados
+        category: true,      // Incluir a categoria associada
       },
-      include: { trainingLinks: true }, // Inclui os links atualizados no retorno
     });
 
-    res.json(training);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao atualizar treinamento" });
-  }
-});
-
-// Rota para deletar um treinamento
-app.delete("/api/trainings/:id", authenticateToken, async (req, res) => {
-  const id = +req.params.id;
-  
-  try {
-    // Obtém o treinamento, incluindo os links associados.
-    const training = await prisma.training.findUnique({ 
-      where: { id },
-      include: { trainingLinks: true }, // Obtém os links associados ao treinamento
-    });
-
-    if (training?.imageName) {
-      await deleteFile(training.imageName); // Apaga a imagem associada ao treinamento
+    // Gerar URLs assinadas para as imagens
+    for (let training of trainings) {
+      if (training.imageName) {
+        training.imageUrl = await getObjectSignedUrl(training.imageName);
+      }
     }
 
-    // Remove os links associados ao treinamento
-    await prisma.trainingLink.deleteMany({ where: { trainingId: id } });
-    // Deleta o próprio treinamento
-    await prisma.training.delete({ where: { id } });
-
-    res.json({ message: "Treinamento deletado com sucesso" });
+    res.json(trainings);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao deletar treinamento" });
+    console.error('Erro ao buscar treinamentos:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
+
+
 
 // Rota para obter categorias
 app.get("/api/categories", async (req, res) => {

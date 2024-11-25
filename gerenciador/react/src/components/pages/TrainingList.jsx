@@ -1,56 +1,87 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export default function TrainingList() {
+const TrainingList = () => {
   const [trainings, setTrainings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState([]);
+  const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   useEffect(() => {
-    const fetchTrainings = async () => {
-      try {
-        const { data } = await axios.get('/api/trainings');
-        setTrainings(data);
-      } catch (error) {
-        console.error('Erro ao buscar treinamentos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTrainings();
+    axios.get('/api/trainings').then((response) => {
+      setTrainings(response.data);
+    });
+    axios.get('/api/categories').then((response) => {
+      setCategories(response.data);
+    });
   }, []);
 
-  if (loading) {
-    return <p>Carregando treinamentos...</p>;
-  }
-
-  if (trainings.length === 0) {
-    return <p>Nenhum treinamento disponível.</p>;
-  }
+  const filteredTrainings = trainings.filter((training) => {
+    const matchesSearch = training.title
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesCategory = categoryFilter
+      ? training.categoryId === Number(categoryFilter)
+      : true;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
-    <div className="mt-8">
-      <h2 className="text-xl font-bold mb-4">Treinamentos</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {trainings.map((training) => (
-          <div
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <h2 className="text-3xl font-bold mb-6">Lista de Treinamentos</h2>
+
+      <div className="flex gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Buscar por título"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="p-2 border rounded w-full"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="p-2 border rounded"
+        >
+          <option value="">Todas as categorias</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <ul className="space-y-4">
+        {filteredTrainings.map((training) => (
+          <li
             key={training.id}
-            className="bg-white shadow-md rounded p-4 flex flex-col items-start"
+            className="bg-white p-4 rounded shadow-md flex flex-col gap-2"
           >
-            <h3 className="text-lg font-bold">{training.title}</h3>
+            <h3 className="text-xl font-bold">{training.title}</h3>
             <p>{training.description}</p>
+            <p className="text-sm text-gray-500">
+              Categoria: {categories.find((c) => c.id === training.categoryId)?.name}
+            </p>
             <ul className="mt-2">
-              {training.trainingLinks.map((link) => (
-                <li key={link.id}>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-blue-500">
+              {training.trainingLinks.map((link, index) => (
+                <li key={index}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
                     {link.url}
                   </a>
                 </li>
               ))}
             </ul>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
-}
+};
+
+export default TrainingList;
