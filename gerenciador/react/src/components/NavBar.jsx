@@ -3,17 +3,28 @@ import { Menu, LogOut, Home, FilePlus, Wrench, GraduationCap, X } from 'lucide-r
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
-
 import logoDark from './assets/logo_dark.png';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+
 export default function NavBar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [scrolled, setScrolled] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      setScrolled(isScrolled);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = () => {
     document.body.classList.add('fade-out');
@@ -53,11 +64,15 @@ export default function NavBar() {
       color: 'hover:text-purple-400'
     }
   ];
-   
 
   return (
-    <Disclosure as="nav" className="bg-gray-800 py-4 shadow-md">
-       {({ open }) => (
+    <Disclosure as="nav" 
+      className={classNames(
+        'fixed w-full top-0 z-50 transition-all duration-300',
+        scrolled ? 'bg-gray-800/95 backdrop-blur-sm shadow-lg' : 'bg-gray-800'
+      )}
+    >
+      {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex items-center justify-between h-16">

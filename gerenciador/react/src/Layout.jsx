@@ -1,15 +1,13 @@
-import {
-  Outlet
-} from "react-router-dom";
-import NavBar from './components/NavBar'
+import { Outlet } from "react-router-dom";
+import NavBar from './components/NavBar';
 
 export default function Layout() {
   return (
-    <div>
-      <NavBar></NavBar>
-      <div>
+    <div className="min-h-screen bg-gray-50"> 
+      <NavBar />
+      <main className="pt-20 pb-8"> 
         <Outlet />
-      </div>
+      </main>
     </div>
   );
 }
