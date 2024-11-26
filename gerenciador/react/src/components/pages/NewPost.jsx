@@ -1,16 +1,34 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, File, ImageIcon, Trash2, Check, Loader2 } from 'lucide-react';
+import { Upload, File, ImageIcon, Trash2, Check, Loader2, Tag } from 'lucide-react';
 
 export default function NewPost() {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [categories, setCategories] = useState([]);
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
+
+  // Carregar categorias ao montar o componente
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const response = await axios.get('/api/categories');
+        setCategories(response.data);
+      } catch (error) {
+        console.error('Erro ao carregar categorias:', error);
+        setMessage({ 
+          type: 'error', 
+          text: 'Não foi possível carregar as categorias' 
+        });
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const submit = async (event) => {
     event.preventDefault();
@@ -187,18 +205,25 @@ export default function NewPost() {
             className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
 
-          <select
-            value={categoryId}
-            onChange={categorySelected}
-            required
-            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
-          >
-            <option value="">Selecione uma categoria</option>
-            <option value="1">Ícones</option>
-            <option value="2">Trabalho</option>
-            <option value="3">Educação</option>
-            <option value="4">Outros</option>
-          </select>
+          <div>
+            <label className="flex items-center font-semibold mb-2 text-gray-700">
+              <Tag className="w-4 h-4 mr-2 text-blue-500" />
+              Categoria
+            </label>
+            <select
+              value={categoryId}
+              onChange={categorySelected}
+              required
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-gray-700"
+            >
+              <option value="">Selecione uma categoria</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <button
             type="submit"

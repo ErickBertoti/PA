@@ -67,19 +67,26 @@ export default function SinglePost({ post, category, deletePostClicked, download
 
       {/* Modal de visualização completa */}
       {showFullImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="relative max-w-4xl w-full">
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowFullImage(false)}
+        >
+          <div 
+            className="relative max-w-sm w-full" 
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               onClick={() => setShowFullImage(false)}
-              className="absolute right-2 top-2 p-1 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all duration-200"
+              className="absolute -right-2 -top-2 p-1 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all duration-200"
             >
               <X className="w-5 h-5 text-white" />
             </button>
             <img
               src={imageUrl}
               alt={caption}
-              className="w-full h-auto rounded-lg"
+              className="w-full h-auto rounded-lg shadow-lg"
             />
+            <p className="mt-2 text-center text-white text-sm">{caption}</p>
           </div>
         </div>
       )}
