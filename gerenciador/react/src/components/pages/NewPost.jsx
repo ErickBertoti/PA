@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, File, ImageIcon, Trash2, Check, Loader2, Tag } from 'lucide-react';
+import { Upload, File, FileText, Trash2, Check, Loader2, Tag } from 'lucide-react';
 
 export default function NewPost() {
   const [file, setFile] = useState(null);
@@ -13,17 +13,17 @@ export default function NewPost() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
 
-  // Carregar categorias ao montar o componente
+  // Load categories when component mounts
   useEffect(() => {
     async function fetchCategories() {
       try {
         const response = await axios.get('/api/categories');
         setCategories(response.data);
       } catch (error) {
-        console.error('Erro ao carregar categorias:', error);
+        console.error('Error loading categories:', error);
         setMessage({ 
           type: 'error', 
-          text: 'Não foi possível carregar as categorias' 
+          text: 'Could not load categories' 
         });
       }
     }
@@ -35,12 +35,12 @@ export default function NewPost() {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      setMessage({ type: 'error', text: 'Você precisa estar autenticado para realizar esta ação.' });
+      setMessage({ type: 'error', text: 'You need to be authenticated to perform this action.' });
       return;
     }
 
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('file', file);
     formData.append('caption', caption);
     formData.append('categoryId', categoryId);
 
@@ -68,7 +68,7 @@ export default function NewPost() {
       setCategoryId('');
       setUploadProgress(100);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao enviar o arquivo.' });
+      setMessage({ type: 'error', text: err.response?.data?.error || 'Erro ao fazer Upload.' });
     } finally {
       setTimeout(() => {
         setLoading(false);
@@ -117,9 +117,9 @@ export default function NewPost() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-gray-800 flex items-center justify-center space-x-2">
               <Upload className="h-6 w-6 text-blue-600" />
-              <span>Upload de Arquivo</span>
+              <span>Upload de arquivos</span>
             </h2>
-            <p className="text-sm text-gray-500 mt-2">Compartilhe seus arquivos facilmente</p>
+            <p className="text-sm text-gray-500 mt-2">Compartilhe seu documentos facilmente</p>
           </div>
 
           {message.text && (
@@ -153,7 +153,6 @@ export default function NewPost() {
               ref={fileInputRef}
               id="file"
               type="file"
-              accept="image/*"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -170,7 +169,7 @@ export default function NewPost() {
             >
               {file ? (
                 <div className="flex items-center space-x-3">
-                  <File className="h-8 w-8 text-blue-600" />
+                  <FileText className="h-8 w-8 text-blue-600" />
                   <div>
                     <p className="text-sm font-semibold text-gray-700">{file.name}</p>
                     <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
@@ -188,7 +187,7 @@ export default function NewPost() {
                 </div>
               ) : (
                 <div className="flex flex-col items-center space-y-2">
-                  <ImageIcon className="h-10 w-10 text-gray-400" />
+                  <File className="h-10 w-10 text-gray-400" />
                   <p className="text-sm text-gray-500 text-center">
                     Arraste e solte o arquivo aqui ou clique para selecionar
                   </p>
@@ -244,7 +243,7 @@ export default function NewPost() {
             ) : (
               <>
                 <Upload className="h-5 w-5" />
-                <span>Enviar</span>
+                <span>Upload</span>
               </>
             )}
           </button>

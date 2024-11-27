@@ -20,7 +20,6 @@ export default function NavBar() {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        // Note: You'll need to implement an endpoint to fetch user details
         const response = await axios.get('/api/user/profile', {
           headers: { 
             'Authorization': `Bearer ${localStorage.getItem('token')}` 
@@ -111,11 +110,6 @@ export default function NavBar() {
                   to="/"
                   className="flex-shrink-0 flex items-center text-white group transition-transform duration-200 hover:scale-105"
                 >
-                  <img 
-                    className="block h-8 w-auto rounded-md transform transition-transform group-hover:rotate-3" 
-                    src={logoDark} 
-                    alt="DMS" 
-                  />
                   <h1 className="text-2xl font-bold text-white ml-3 tracking-tight relative">
                     Gerenciador de Arquivos
                     <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-400 transition-all duration-300 group-hover:w-full"></span>

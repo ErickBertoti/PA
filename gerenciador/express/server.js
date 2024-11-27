@@ -4,6 +4,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import path from 'path';
 
 import { PrismaClient } from '@prisma/client';
 import { uploadFile, deleteFile, getObjectSignedUrl } from './s3.js';
@@ -12,16 +13,20 @@ const app = express();
 const prisma = new PrismaClient();
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage, 
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB file size limit 
+});
 
 const generateFileName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
 
 const secretKey = process.env.JWT_SECRET_KEY;
+
 // Middleware para permitir CORS
 app.use(cors({
-  origin: 'http://localhost:3000', // Permite requisições do frontend (ajuste conforme necessário)
-  methods: ['GET', 'POST', 'DELETE'], // Permite esses métodos, adicione mais se necessário
-  allowedHeaders: ['Content-Type', 'Authorization'], // Permite cabeçalhos específicos
+  origin: 'http://localhost:3000', 
+  methods: ['GET', 'POST', 'DELETE', 'PUT'], 
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Middleware para interpretar o corpo das requisições como JSON
@@ -52,7 +57,6 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-
 // Rota para obter os posts
 app.get("/api/posts", async (req, res) => {
   const posts = await prisma.posts.findMany({ orderBy: [{ created: 'desc' }] });
@@ -63,27 +67,69 @@ app.get("/api/posts", async (req, res) => {
 });
 
 // Rota para criar posts (exige autenticação)
-app.post('/api/posts', authenticateToken, upload.single('image'), async (req, res) => {
+app.post('/api/posts', authenticateToken, upload.single('file'), async (req, res) => {
   const file = req.file;
   const caption = req.body.caption;
   const categoryId = req.body.categoryId;
+
+  if (!file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
   const imageName = generateFileName();
 
-  const fileBuffer = await sharp(file.buffer)
-    .resize({ height: 1920, width: 1080, fit: "contain" })
-    .toBuffer();
+  try {
+    let processedBuffer = file.buffer;
 
-  await uploadFile(fileBuffer, imageName, file.mimetype);
-
-  const post = await prisma.posts.create({
-    data: {
-      imageName,
-      caption,
-      categoryId: +categoryId,
+    // Try to process image if it's a supported image type
+    try {
+      processedBuffer = await sharp(file.buffer)
+        .resize({ height: 1920, width: 1080, fit: "contain" })
+        .toBuffer();
+    } catch (imageProcessingError) {
+      // If image processing fails, use original buffer
+      console.warn('Image processing failed, using original file:', imageProcessingError.message);
     }
-  });
 
-  res.status(201).send(post);
+    await uploadFile(processedBuffer, imageName, file.mimetype);
+
+    const post = await prisma.posts.create({
+      data: {
+        imageName,
+        originalFileName: file.originalname,
+        fileType: file.mimetype,
+        caption,
+        categoryId: +categoryId,
+      }
+    });
+
+    res.status(201).send(post);
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'File upload failed', details: error.message });
+  }
+});
+
+// Rota para obter a imagem/download de um post
+app.get("/api/posts/:id/download", async (req, res) => {
+  try {
+    const id = +req.params.id;
+    const post = await prisma.posts.findUnique({ where: { id } });
+
+    if (!post) {
+      return res.status(404).json({ error: "File not found" });
+    }
+
+    const imageUrl = await getObjectSignedUrl(post.imageName);
+    res.json({ 
+      url: imageUrl, 
+      originalFileName: post.originalFileName, 
+      fileType: post.fileType 
+    });
+  } catch (error) {
+    console.error("Download error:", error);
+    res.status(500).json({ error: "Error generating download URL" });
+  }
 });
 
 // Rota para deletar posts (exige autenticação)
@@ -92,7 +138,6 @@ app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
   const post = await prisma.posts.findUnique({ where: { id } });
 
   await deleteFile(post.imageName);
-
   await prisma.posts.delete({ where: { id: post.id } });
   res.send(post);
 });
@@ -149,8 +194,7 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
   res.send(tool);
 });
 
-//treinamentos
-// Adicionar rota para criar treinamento
+// Rota para criar treinamento
 app.post('/api/trainings', authenticateToken, upload.single('image'), async (req, res) => {
   try {
     const { title, description, categoryId, links } = req.body;
@@ -182,7 +226,7 @@ app.post('/api/trainings', authenticateToken, upload.single('image'), async (req
         imageName,
         categoryId: +categoryId,
         trainingLinks: {
-          create: linksArray.map((link) => ({ url: link })), // Certifique-se de que linksArray é um array
+          create: linksArray.map((link) => ({ url: link })),
         },
       },
     });
@@ -194,18 +238,18 @@ app.post('/api/trainings', authenticateToken, upload.single('image'), async (req
   }
 });
 
-
+// Rota para obter treinamentos
 app.get('/api/trainings', authenticateToken, async (req, res) => {
   try {
-    const { categoryId } = req.query; // Filtrar por categoria, se necessário
+    const { categoryId } = req.query;
 
     const filter = categoryId ? { where: { categoryId: +categoryId } } : {};
 
     const trainings = await prisma.training.findMany({
       ...filter,
       include: {
-        trainingLinks: true, // Incluir os links associados
-        category: true,      // Incluir a categoria associada
+        trainingLinks: true,
+        category: true,
       },
     });
 
@@ -223,8 +267,6 @@ app.get('/api/trainings', authenticateToken, async (req, res) => {
   }
 });
 
-
-
 // Rota para obter categorias
 app.get("/api/categories", async (req, res) => {
   const categories = await prisma.category.findMany();
@@ -241,7 +283,7 @@ app.get("/api/posts/:id/image", async (req, res) => {
       return res.status(404).json({ error: "Post não encontrado" });
     }
 
-    const imageUrl = await getObjectSignedUrl(post.imageName); // Gere a URL assinada
+    const imageUrl = await getObjectSignedUrl(post.imageName);
     if (!imageUrl) {
       return res.status(500).json({ error: "Erro ao gerar URL da imagem" });
     }
@@ -253,7 +295,6 @@ app.get("/api/posts/:id/image", async (req, res) => {
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
-
 
 // Rota para criar um novo usuário (signup)
 app.post('/api/signup', async (req, res) => {
@@ -269,7 +310,7 @@ app.post('/api/signup', async (req, res) => {
 
   try {
     await prisma.profile.create({
-      data: { email, password, name }, // A senha será salva em texto puro
+      data: { email, password, name },
     });
 
     return res.status(201).json({ message: 'User created successfully' });
@@ -298,7 +339,6 @@ app.post('/api/login', async (req, res) => {
 
   return res.status(200).json({ token });
 });
-
 
 // Rota para obter detalhes do perfil do usuário
 app.get("/api/user/profile", authenticateToken, async (req, res) => {

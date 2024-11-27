@@ -18,6 +18,22 @@ const s3Client = new S3Client({
   }
 })
 
+const downloadFile = async ({id}) => {
+  try {
+    const response = await axios.get(`/api/posts/${id}/download`);
+    
+    // Create a temporary anchor element to trigger download
+    const a = document.createElement('a');
+    a.href = response.data.url;
+    a.download = response.data.originalFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (error) {
+    console.error('Download error:', error);
+    alert('Could not download file');
+  }
+};
 
 export function uploadFile(fileBuffer, fileName, mimetype) {
   const uploadParams = {

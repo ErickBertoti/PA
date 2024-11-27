@@ -8,12 +8,14 @@ datasource db {
 }
 
 model Posts {
-  id            Int      @id @default(autoincrement())
-  imageName     String
-  caption       String
-  created       DateTime @default(now())
-  category Category @relation(fields: [categoryId], references: [id])
-  categoryId Int
+  id               Int       @id @default(autoincrement())
+  imageName        String    // Now used for any file name
+  originalFileName String    // Store original file name
+  fileType         String    // Store MIME type of the file
+  caption          String?
+  categoryId       Int
+  created          DateTime  @default(now())
+  category         Category  @relation(fields: [categoryId], references: [id])
 }
 
 model Category {

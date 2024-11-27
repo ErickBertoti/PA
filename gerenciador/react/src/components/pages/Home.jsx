@@ -21,7 +21,15 @@ function App() {
           axios.get("/api/categories")
         ])
 
-        setPosts(postsResponse.data)
+        // Modify posts to ensure all required fields are present
+        const processedPosts = postsResponse.data.map(post => ({
+          ...post,
+          fileType: post.fileType || 'application/octet-stream',
+          originalFileName: post.originalFileName || 'Unnamed File',
+          caption: post.caption || ''
+        }))
+
+        setPosts(processedPosts)
         const categoriesMap = categoriesResponse.data.reduce((acc, category) => {
           acc[category.id] = category.name
           return acc
@@ -29,7 +37,7 @@ function App() {
         setCategories(categoriesMap)
         setCategoryList(categoriesResponse.data)
       } catch (error) {
-        console.error("Erro ao carregar dados:", error)
+        console.error("Erro ao carregar:", error)
       } finally {
         setIsLoading(false)
       }
@@ -47,22 +55,24 @@ function App() {
       setPosts(posts.filter(post => post.id !== id))
     } catch (error) {
       console.error(error.response?.data || error.message)
-      alert("Não foi possível deletar o post. Verifique sua autenticação.")
+      alert("Não foi possível deletar. verifique sua autenticação.")
     }
   }
   
   const downloadFile = async ({id}) => {
     try {
-      const response = await axios.get(`/api/posts/${id}/image`, { responseType: 'blob' })
-      const blob = new Blob([response.data], { type: response.headers['content-type'] })
-      const url = URL.createObjectURL(blob)
+      const response = await axios.get(`/api/posts/${id}/download`)
+      
+      // Create an anchor element to trigger download
       const a = document.createElement('a')
-      a.href = url
-      a.download = `post-${id}.${response.headers['content-type'].split('/')[1]}`
+      a.href = response.data.url
+      a.download = response.data.originalFileName
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
     } catch (error) {
       console.error(error)
+      alert("Erro ao baixar arquivo")
     }
   }
 
@@ -72,7 +82,7 @@ function App() {
     downloadFile
   }
 
-  // Filtra posts baseado na categoria selecionada
+  // Filtro por categoria
   const filteredPosts = selectedCategory 
     ? posts.filter(post => post.categoryId === selectedCategory)
     : posts
@@ -92,17 +102,17 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciador de Documentos</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Gerenciar documentos</h1>
           <button
             onClick={() => navigate('/newPost')}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
           >
             <FolderPlus className="w-5 h-5 mr-2" />
-            Novo Documento
+            Novo documento
           </button>
         </div>
 
-        {/* Filtro de Categorias */}
+        {/* Category Filter */}
         <div className="mb-6 flex items-center space-x-4">
           <div className="relative">
             <select
@@ -110,7 +120,7 @@ function App() {
               onChange={(e) => setSelectedCategory(e.target.value || null)}
               className="appearance-none w-full pl-10 pr-8 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
             >
-              <option value="">Todos os Documentos</option>
+              <option value="">Todos documentos</option>
               {categoryList.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -136,20 +146,20 @@ function App() {
             <FileQuestion className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <h2 className="text-xl font-semibold text-gray-800 mb-2">
               {selectedCategory 
-                ? `Nenhum documento na categoria ${categories[selectedCategory]}` 
-                : 'Nenhum documento registrado'}
+                ? `Sem documentos na categoria ${categories[selectedCategory]}` 
+                : 'Sem documentos registrados'}
             </h2>
             <p className="text-gray-600 mb-6">
               {selectedCategory 
-                ? 'Tente selecionar outra categoria' 
-                : 'Comece adicionando seu primeiro documento ao sistema.'}
+                ? 'Olhe em outra categoria' 
+                : 'Comece adicionando o primeiro arquivo.'}
             </p>
             <button
               onClick={() => navigate('/newPost')}
               className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
             >
               <FolderPlus className="w-5 h-5 mr-2" />
-              Registrar Novo Arquivo
+              Adicionar novo arquivo
             </button>
           </div>
         ) : (
@@ -157,7 +167,7 @@ function App() {
             {selectedCategory && (
               <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
                 <p className="text-blue-800 font-medium">
-                  Exibindo documentos da categoria: {categories[selectedCategory]}
+                  Mostrando arquivos na categoria: {categories[selectedCategory]}
                 </p>
               </div>
             )}
@@ -172,7 +182,7 @@ function App() {
                       post={post} 
                       category={categories[post.categoryId]} 
                       deletePostClicked={deletePostClicked} 
-                      downloadFile={postActions.downloadFile}
+                      downloadFile={downloadFile}
                     />
                   </div>
                 </div>
