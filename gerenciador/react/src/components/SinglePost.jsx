@@ -78,9 +78,16 @@ export default function SinglePost({ post, category, deletePostClicked, download
           </div>
         </div>
 
-        {/* Caption */}
-        <div className="px-4 py-2">
-          <p className="text-sm text-gray-600 truncate">{caption || originalFileName}</p>
+        {/* Filename and Caption */}
+        <div className="px-4 py-3">
+          <h3 className="text-sm font-semibold text-gray-800 mb-1 truncate" title={originalFileName}>
+            {originalFileName}
+          </h3>
+          {caption && (
+            <p className="text-xs text-gray-600 truncate" title={caption}>
+              {caption}
+            </p>
+          )}
         </div>
       </div>
 

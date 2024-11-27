@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Plus, FileText, BookOpen, Tag, Link as LinkIcon, X } from 'lucide-react';
+import { Upload, Plus, FileText, BookOpen, Tag, Link as LinkIcon, X, File } from 'lucide-react';
 
 const Training = () => {
   const [title, setTitle] = useState('');
@@ -8,14 +8,23 @@ const Training = () => {
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState([]);
   const [trainingLinks, setTrainingLinks] = useState(['']);
-  const [image, setImage] = useState(null);
-  const [previewImage, setPreviewImage] = useState(null);
+  const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     // Fetch categories
-    axios.get('/api/categories').then((response) => {
-      setCategories(response.data);
-    });
+    axios.get('/api/categories')
+      .then((response) => {
+        setCategories(response.data);
+      })
+      .catch((error) => {
+        console.error('Error fetching categories:', error);
+        setMessage({ 
+          type: 'error', 
+          text: 'Não foi possível carregar as categorias' 
+        });
+      });
   }, []);
 
   const handleAddLink = () => {
@@ -32,23 +41,13 @@ const Training = () => {
     setTrainingLinks(updatedLinks);
   };
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    setImage(file);
-    
-    // Create image preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewImage(reader.result);
-    };
-    if (file) {
-      reader.readAsDataURL(file);
-    }
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    setFile(selectedFile);
   };
 
-  const handleRemoveImage = () => {
-    setImage(null);
-    setPreviewImage(null);
+  const clearFile = () => {
+    setFile(null);
   };
 
   const handleSubmit = async (e) => {
@@ -56,7 +55,12 @@ const Training = () => {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Você precisa estar autenticado para realizar esta ação.');
+      setMessage({ type: 'error', text: 'Você precisa estar autenticado para realizar esta ação.' });
+      return;
+    }
+
+    if (!title || !description || !categoryId) {
+      setMessage({ type: 'error', text: 'Título, descrição e categoria são obrigatórios.' });
       return;
     }
 
@@ -64,30 +68,46 @@ const Training = () => {
     formData.append('title', title);
     formData.append('description', description);
     formData.append('categoryId', categoryId);
-    trainingLinks.forEach((link, index) =>
-      formData.append(`trainingLinks[${index}]`, link)
-    );
-    if (image) {
-      formData.append('image', image);
+    
+    // Append training links
+    trainingLinks.forEach((link, index) => {
+      if (link.trim()) {
+        formData.append(`links[${index}]`, link);
+      }
+    });
+
+    // Append file if exists
+    if (file) {
+      formData.append('image', file);
     }
 
+    setLoading(true);
+    setMessage({ type: '', text: '' });
+
     try {
-      await axios.post('/api/trainings', formData,{
+      const response = await axios.post('/api/trainings', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,
-        }
+        },
       });
-      alert('Treinamento registrado com sucesso!');
+
+      setMessage({ type: 'success', text: 'Treinamento registrado com sucesso!' });
+      
+      // Reset form
       setTitle('');
       setDescription('');
       setCategoryId('');
       setTrainingLinks(['']);
-      setImage(null);
-      setPreviewImage(null);
+      setFile(null);
     } catch (error) {
       console.error('Erro ao registrar treinamento:', error);
-      alert('Erro ao registrar treinamento.');
+      setMessage({ 
+        type: 'error', 
+        text: error.response?.data?.error || 'Erro ao registrar treinamento.' 
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,6 +117,18 @@ const Training = () => {
         <BookOpen className="w-8 h-8 mr-3 text-blue-500" />
         <h2 className="text-2xl font-bold text-gray-800">Registrar Treinamento</h2>
       </div>
+
+      {message.text && (
+        <div
+          className={`p-3 mb-4 text-sm rounded-lg ${
+            message.type === 'success' 
+              ? 'bg-green-100 text-green-700' 
+              : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -187,26 +219,26 @@ const Training = () => {
             <Upload className="w-4 h-4 mr-2 text-blue-500" />
             Imagem (opcional)
           </label>
-          <div className="flex items-center space-x-4">
+          <div>
             <input
               type="file"
               accept="image/*"
-              onChange={handleImageChange}
+              onChange={handleFileChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-blue-500 hover:file:bg-blue-100"
             />
-            {previewImage && (
-              <div className="relative">
-                <img 
-                  src={previewImage} 
-                  alt="Preview" 
-                  className="w-20 h-20 object-cover rounded-md"
-                />
-                <button
+            {file && (
+              <div className="flex items-center space-x-3 mt-2">
+                <File className="h-6 w-6 text-blue-600" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-700">{file.name}</p>
+                  <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
+                </div>
+                <button 
                   type="button"
-                  onClick={handleRemoveImage}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  onClick={clearFile} 
+                  className="text-red-500 hover:text-red-700"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="h-5 w-5" />
                 </button>
               </div>
             )}
@@ -216,10 +248,16 @@ const Training = () => {
         <div>
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
+            disabled={loading}
+            className={`
+              w-full py-3 rounded-md text-white font-semibold transition-colors 
+              ${loading 
+                ? 'bg-blue-400 cursor-not-allowed' 
+                : 'bg-blue-500 hover:bg-blue-600'
+              }
+            `}
           >
-            <BookOpen className="w-5 h-5" />
-            <span>Registrar Treinamento</span>
+            {loading ? 'Enviando...' : 'Registrar Treinamento'}
           </button>
         </div>
       </form>

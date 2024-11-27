@@ -6,10 +6,11 @@ import { FolderPlus, FileQuestion, Loader2, Filter, X } from 'lucide-react'
 
 function App() {  
   const [posts, setPosts] = useState([])
-  const [categories, setCategories] = useState({})
+  const [categories, setCategories] = useState([])
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [categoryList, setCategoryList] = useState([])
+  const [search, setSearch] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+
   let navigate = useNavigate()
 
   useEffect(() => {
@@ -30,12 +31,7 @@ function App() {
         }))
 
         setPosts(processedPosts)
-        const categoriesMap = categoriesResponse.data.reduce((acc, category) => {
-          acc[category.id] = category.name
-          return acc
-        }, {})
-        setCategories(categoriesMap)
-        setCategoryList(categoriesResponse.data)
+        setCategories(categoriesResponse.data)
       } catch (error) {
         console.error("Erro ao carregar:", error)
       } finally {
@@ -82,10 +78,16 @@ function App() {
     downloadFile
   }
 
-  // Filtro por categoria
-  const filteredPosts = selectedCategory 
-    ? posts.filter(post => post.categoryId === selectedCategory)
-    : posts
+  // Filtered posts
+  const filteredPosts = posts.filter((post) => {
+    const matchesSearch = post.originalFileName
+      .toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesCategory = categoryFilter
+      ? post.categoryId === Number(categoryFilter)
+      : true;
+    return matchesSearch && matchesCategory;
+  });
 
   if (isLoading) {
     return (
@@ -112,45 +114,39 @@ function App() {
           </button>
         </div>
 
-        {/* Category Filter */}
-        <div className="mb-6 flex items-center space-x-4">
-          <div className="relative">
-            <select
-              value={selectedCategory || ''}
-              onChange={(e) => setSelectedCategory(e.target.value || null)}
-              className="appearance-none w-full pl-10 pr-8 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm"
-            >
-              <option value="">Todos documentos</option>
-              {categoryList.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-              <Filter className="h-5 w-5 text-gray-400" />
-            </div>
-            {selectedCategory && (
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            )}
-          </div>
+        {/* Search and Category Filter */}
+        <div className="flex gap-4 mb-6">
+          <input
+            type="text"
+            placeholder="Buscar por nome do arquivo"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="p-2 border rounded w-full"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="p-2 border rounded"
+          >
+            <option value="">Todas as categorias</option>
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {filteredPosts.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm p-8 text-center">
             <FileQuestion className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <h2 className="text-xl font-semibold text-gray-800 mb-2">
-              {selectedCategory 
-                ? `Sem documentos na categoria ${categories[selectedCategory]}` 
+              {categoryFilter 
+                ? `Sem documentos na categoria ${categories.find(c => c.id === Number(categoryFilter))?.name}` 
                 : 'Sem documentos registrados'}
             </h2>
             <p className="text-gray-600 mb-6">
-              {selectedCategory 
+              {categoryFilter 
                 ? 'Olhe em outra categoria' 
                 : 'Comece adicionando o primeiro arquivo.'}
             </p>
@@ -164,10 +160,10 @@ function App() {
           </div>
         ) : (
           <div>
-            {selectedCategory && (
+            {categoryFilter && (
               <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
                 <p className="text-blue-800 font-medium">
-                  Mostrando arquivos na categoria: {categories[selectedCategory]}
+                  Mostrando arquivos na categoria: {categories.find(c => c.id === Number(categoryFilter))?.name}
                 </p>
               </div>
             )}
@@ -180,7 +176,7 @@ function App() {
                   <div className="p-6">
                     <SinglePost 
                       post={post} 
-                      category={categories[post.categoryId]} 
+                      category={categories.find(c => c.id === post.categoryId)?.name} 
                       deletePostClicked={deletePostClicked} 
                       downloadFile={downloadFile}
                     />

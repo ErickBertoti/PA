@@ -58,12 +58,29 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Rota para obter os posts
-app.get("/api/posts", async (req, res) => {
-  const posts = await prisma.posts.findMany({ orderBy: [{ created: 'desc' }] });
-  for (let post of posts) {
-    post.imageUrl = await getObjectSignedUrl(post.imageName);
+app.get("/api/posts", authenticateToken, async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+
+    const filter = categoryId ? { where: { categoryId: +categoryId } } : {};
+
+    const posts = await prisma.posts.findMany({
+      ...filter,
+      orderBy: [{ created: 'desc' }],
+      include: {
+        category: true, // If you have a category relationship
+      }
+    });
+
+    for (let post of posts) {
+      post.imageUrl = await getObjectSignedUrl(post.imageName);
+    }
+
+    res.send(posts);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    res.status(500).send({ error: 'Unable to fetch posts' });
   }
-  res.send(posts);
 });
 
 // Rota para criar posts (exige autenticação)
@@ -195,7 +212,7 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
 });
 
 // Rota para criar treinamento
-app.post('/api/trainings', authenticateToken, upload.single('image'), async (req, res) => {
+app.post('/api/trainings', authenticateToken, upload.single('file'), async (req, res) => {
   try {
     const { title, description, categoryId, links } = req.body;
 

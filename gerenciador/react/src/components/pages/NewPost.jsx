@@ -13,17 +13,17 @@ export default function NewPost() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const fileInputRef = useRef(null);
 
-  // Load categories when component mounts
+  // Busca as categorias na API
   useEffect(() => {
     async function fetchCategories() {
       try {
         const response = await axios.get('/api/categories');
         setCategories(response.data);
       } catch (error) {
-        console.error('Error loading categories:', error);
+        console.error('Erro ao carregar categorias:', error);
         setMessage({ 
           type: 'error', 
-          text: 'Could not load categories' 
+          text: 'Não foi possível carregar as categorias' 
         });
       }
     }
@@ -35,7 +35,7 @@ export default function NewPost() {
 
     const token = localStorage.getItem('token');
     if (!token) {
-      setMessage({ type: 'error', text: 'You need to be authenticated to perform this action.' });
+      setMessage({ type: 'error', text: 'Você precisa de autenticação para fazer isso' });
       return;
     }
 
