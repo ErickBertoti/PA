@@ -119,7 +119,7 @@ const Login = () => {
                 to="/register" 
                 className="text-sm text-blue-600 hover:text-blue-800 transition duration-300"
               >
-                Criar conta
+                Não tem conta? Cadastre-se agora
               </Link>
             </div>
           </form>

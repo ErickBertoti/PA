@@ -299,6 +299,33 @@ app.post('/api/login', async (req, res) => {
   return res.status(200).json({ token });
 });
 
+
+// Rota para obter detalhes do perfil do usuário
+app.get("/api/user/profile", authenticateToken, async (req, res) => {
+  try {
+    const profile = await prisma.profile.findUnique({
+      where: { id: req.userId },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+
+    if (!profile) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+
+    res.json({
+      name: profile.name,
+      email: profile.email
+    });
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Rota para verificar se o usuário está autenticado
 app.get("/api/authenticated", authenticateToken, (req, res) => {
   return res.status(200).json({ isAuthenticated: true });
