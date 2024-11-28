@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Upload, Plus, FileText, BookOpen, Tag, Link as LinkIcon, X, File } from 'lucide-react';
+import { Upload, Plus, FileText, BookOpen, Tag, Link as LinkIcon, X, File, List } from 'lucide-react';
 
 const Training = () => {
+  const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -14,7 +16,15 @@ const Training = () => {
 
   useEffect(() => {
     // Fetch categories
-    axios.get('/api/categories')
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setMessage({ type: 'error', text: 'Você precisa estar autenticado para acessar esta página.' });
+      return;
+    }
+
+    axios.get('/api/categories', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
       .then((response) => {
         setCategories(response.data);
       })
@@ -43,7 +53,19 @@ const Training = () => {
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
+    
+    // Validate file size (50MB limit)
+    if (selectedFile && selectedFile.size > 50 * 1024 * 1024) {
+      setMessage({ 
+        type: 'error', 
+        text: 'O arquivo deve ser menor que 50MB' 
+      });
+      event.target.value = null;
+      return;
+    }
+    
     setFile(selectedFile);
+    setMessage({ type: '', text: '' });
   };
 
   const clearFile = () => {
@@ -69,7 +91,7 @@ const Training = () => {
     formData.append('description', description);
     formData.append('categoryId', categoryId);
     
-    // Append training links
+    // Append training links - compatible with backend expectation
     trainingLinks.forEach((link, index) => {
       if (link.trim()) {
         formData.append(`links[${index}]`, link);
@@ -78,7 +100,7 @@ const Training = () => {
 
     // Append file if exists
     if (file) {
-      formData.append('image', file);
+      formData.append('file', file);
     }
 
     setLoading(true);
@@ -111,11 +133,25 @@ const Training = () => {
     }
   };
 
+  const handleViewTrainings = () => {
+    navigate('/trainingList');
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-lg">
-      <div className="flex items-center mb-6">
-        <BookOpen className="w-8 h-8 mr-3 text-blue-500" />
-        <h2 className="text-2xl font-bold text-gray-800">Registrar Treinamento</h2>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center">
+          <BookOpen className="w-8 h-8 mr-3 text-blue-500" />
+          <h2 className="text-2xl font-bold text-gray-800">Registrar Treinamento</h2>
+        </div>
+        <button
+          type="button"
+          onClick={handleViewTrainings}
+          className="flex items-center bg-blue-50 text-blue-600 px-4 py-2 rounded-md hover:bg-blue-100 transition-colors"
+        >
+          <List className="w-5 h-5 mr-2" />
+          Ver Treinamentos
+        </button>
       </div>
 
       {message.text && (
@@ -217,12 +253,12 @@ const Training = () => {
         <div>
           <label className="flex items-center font-semibold mb-2 text-gray-700">
             <Upload className="w-4 h-4 mr-2 text-blue-500" />
-            Imagem (opcional)
+            Arquivo (opcional)
           </label>
           <div>
             <input
               type="file"
-              accept="image/*"
+              accept="file"
               onChange={handleFileChange}
               className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all file:mr-4 file:rounded-full file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-blue-500 hover:file:bg-blue-100"
             />

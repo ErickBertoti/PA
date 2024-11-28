@@ -9,9 +9,9 @@ datasource db {
 
 model Posts {
   id               Int       @id @default(autoincrement())
-  imageName        String    // Now used for any file name
-  originalFileName String    // Store original file name
-  fileType         String    // Store MIME type of the file
+  imageName        String    
+  originalFileName String 
+  fileType         String    
   caption          String?
   categoryId       Int
   created          DateTime  @default(now())
@@ -38,7 +38,9 @@ model Training {
   id          Int           @id @default(autoincrement())
   title       String
   description String
-  imageName   String?       // Nome do arquivo da imagem
+  imageName        String?   
+  originalFileName String?    
+  fileType         String?    
   trainingLinks TrainingLink[]  // Relacionamento com os links de treinamento
   category    Category      @relation(fields: [categoryId], references: [id])
   categoryId  Int

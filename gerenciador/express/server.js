@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage, 
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB file size limit 
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB de limite 
 });
 
 const generateFileName = (bytes = 32) => crypto.randomBytes(bytes).toString('hex');
@@ -68,7 +68,7 @@ app.get("/api/posts", authenticateToken, async (req, res) => {
       ...filter,
       orderBy: [{ created: 'desc' }],
       include: {
-        category: true, // If you have a category relationship
+        category: true
       }
     });
 
@@ -98,13 +98,11 @@ app.post('/api/posts', authenticateToken, upload.single('file'), async (req, res
   try {
     let processedBuffer = file.buffer;
 
-    // Try to process image if it's a supported image type
     try {
       processedBuffer = await sharp(file.buffer)
         .resize({ height: 1920, width: 1080, fit: "contain" })
         .toBuffer();
     } catch (imageProcessingError) {
-      // If image processing fails, use original buffer
       console.warn('Image processing failed, using original file:', imageProcessingError.message);
     }
 
@@ -213,45 +211,57 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
 
 // Rota para criar treinamento
 app.post('/api/trainings', authenticateToken, upload.single('file'), async (req, res) => {
+  const file = req.file;
+  const { title, description, categoryId, links } = req.body;
+
+  // Validação dos campos obrigatórios
+  if (!title || !description || !categoryId) {
+    return res.status(400).json({ error: 'Título, descrição e categoria são obrigatórios.' });
+  }
+
+  // Garantir que `links` seja um array, mesmo que vazio
+  const linksArray = Array.isArray(links) ? links : [];
+
+  if (!file) {
+    return res.status(400).json({ error: 'Nenhum arquivo enviado' });
+  }
+
+  const fileName = generateFileName();
+
   try {
-    const { title, description, categoryId, links } = req.body;
+    let processedBuffer = file.buffer;
 
-    // Validação dos campos obrigatórios
-    if (!title || !description || !categoryId) {
-      return res.status(400).json({ error: 'Título, descrição e categoria são obrigatórios.' });
-    }
-
-    // Garantir que `links` seja um array, mesmo que vazio
-    const linksArray = Array.isArray(links) ? links : [];
-
-    let imageName = null;
-
-    if (req.file) {
-      imageName = generateFileName();
-
-      const fileBuffer = await sharp(req.file.buffer)
-        .resize({ height: 1920, width: 1080, fit: 'contain' })
+    try {
+      processedBuffer = await sharp(file.buffer)
+        .resize({ height: 1920, width: 1080, fit: "contain" })
         .toBuffer();
-
-      await uploadFile(fileBuffer, imageName, req.file.mimetype);
+    } catch (imageProcessingError) {
+      console.warn('Processamento de imagem falhou, usando arquivo original:', imageProcessingError.message);
     }
+
+    await uploadFile(processedBuffer, fileName, file.mimetype);
 
     const training = await prisma.training.create({
       data: {
         title,
         description,
-        imageName,
+        imageName: fileName,
+        originalFileName: file.originalname,
+        fileType: file.mimetype,
         categoryId: +categoryId,
         trainingLinks: {
           create: linksArray.map((link) => ({ url: link })),
         },
       },
+      include: {
+        trainingLinks: true,
+      }
     });
 
     res.status(201).json(training);
   } catch (error) {
     console.error('Erro ao criar treinamento:', error);
-    res.status(500).json({ error: 'Erro interno do servidor.' });
+    res.status(500).json({ error: 'Falha no upload do arquivo', details: error.message });
   }
 });
 
@@ -281,6 +291,63 @@ app.get('/api/trainings', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Erro ao buscar treinamentos:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Rota para obter a imagem de um treinamento
+app.get("/api/trainings/:id/image", async (req, res) => {
+  try {
+    const id = +req.params.id;
+
+    const training = await prisma.training.findUnique({ where: { id } });
+    if (!training) {
+      return res.status(404).json({ error: "Treinamento não encontrado" });
+    }
+
+    if (!training.imageName) {
+      return res.status(404).json({ error: "Nenhuma imagem associada a este treinamento" });
+    }
+
+    const imageUrl = await getObjectSignedUrl(training.imageName);
+    if (!imageUrl) {
+      return res.status(500).json({ error: "Erro ao gerar URL da imagem" });
+    }
+
+    // Retorne a URL assinada e detalhes do arquivo
+    res.json({ 
+      url: imageUrl, 
+      originalFileName: training.originalFileName, 
+      fileType: training.fileType 
+    });
+  } catch (error) {
+    console.error("Erro na rota de imagem do treinamento:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// Rota para download do arquivo de treinamento
+app.get("/api/trainings/:id/download", async (req, res) => {
+  try {
+    const id = +req.params.id;
+    const training = await prisma.training.findUnique({ where: { id } });
+
+    if (!training) {
+      return res.status(404).json({ error: "Treinamento não encontrado" });
+    }
+
+    if (!training.imageName) {
+      return res.status(404).json({ error: "Nenhum arquivo associado a este treinamento" });
+    }
+
+    const fileUrl = await getObjectSignedUrl(training.imageName);
+    res.json({ 
+      url: fileUrl, 
+      originalFileName: training.originalFileName, 
+      fileType: training.fileType 
+    });
+  } catch (error) {
+    console.error("Erro no download do treinamento:", error);
+    res.status(500).json({ error: "Erro ao gerar URL de download" });
   }
 });
 
