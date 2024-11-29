@@ -33,6 +33,7 @@ export default function NewPost() {
   const submit = async (event) => {
     event.preventDefault();
 
+    //Verifica autenticação
     const token = localStorage.getItem('token');
     if (!token) {
       setMessage({ type: 'error', text: 'Você precisa de autenticação para fazer isso' });

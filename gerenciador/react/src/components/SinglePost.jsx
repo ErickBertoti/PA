@@ -15,7 +15,7 @@ export default function SinglePost({ post, category, deletePostClicked, download
     setShowDeleteConfirm(false);
   };
 
-  // Function to get file type icon based on mime type
+  // Funcão para ler tipo de ícone pro arquivo baseado no mime type
   const getFileIcon = (type) => {
     const fileIcons = {
       'image': FileImage,
@@ -41,7 +41,7 @@ export default function SinglePost({ post, category, deletePostClicked, download
   return (
     <>
       <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden w-64">
-        {/* Header with category */}
+        {/* Header com a categoria */}
         <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <File className="w-4 h-4 text-gray-500" />
@@ -65,7 +65,7 @@ export default function SinglePost({ post, category, deletePostClicked, download
           </div>
         </div>
 
-        {/* File Preview with overlay */}
+        {/* Preview do arquivo */}
         <div 
           className="relative h-40 cursor-pointer group"
           onClick={() => setShowFullPreview(true)}
@@ -78,7 +78,7 @@ export default function SinglePost({ post, category, deletePostClicked, download
           </div>
         </div>
 
-        {/* Filename and Caption */}
+        {/* Nome do arquivo e descrição */}
         <div className="px-4 py-3">
           <h3 className="text-sm font-semibold text-gray-800 mb-1 truncate" title={originalFileName}>
             {originalFileName}
@@ -91,7 +91,7 @@ export default function SinglePost({ post, category, deletePostClicked, download
         </div>
       </div>
 
-      {/* Full Preview Modal */}
+      {/* Preview Completa */}
       {showFullPreview && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
@@ -124,7 +124,7 @@ export default function SinglePost({ post, category, deletePostClicked, download
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Confirmação de exclusão */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full">

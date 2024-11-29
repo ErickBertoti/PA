@@ -3,13 +3,12 @@ import { Navigate } from 'react-router-dom';
 import axios from 'axios';
 
 const ProtectedRoute = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = React.useState(null); // null enquanto verifica
+  const [isAuthenticated, setIsAuthenticated] = React.useState(null); 
 
   React.useEffect(() => {
-    const token = localStorage.getItem('token'); // Recupera o token armazenado (assumindo que você o guardou no localStorage)
+    const token = localStorage.getItem('token'); // Recupera o token armazenado
 
     if (token) {
-      // Envia o token no cabeçalho Authorization
       axios
         .get('/api/authenticated', {
           headers: {
@@ -20,15 +19,15 @@ const ProtectedRoute = ({ children }) => {
           setIsAuthenticated(response.data.isAuthenticated);
         })
         .catch(() => {
-          setIsAuthenticated(false); // Caso ocorra erro (como 401)
+          setIsAuthenticated(false);
         });
     } else {
-      setIsAuthenticated(false); // Se não houver token, não está autenticado
+      setIsAuthenticated(false);
     }
   }, []);
 
   if (isAuthenticated === null) {
-    // Mostre um loader ou nada enquanto verifica
+    // Mostre um loader enquanto verifica
     return <div>Loading...</div>;
   }
 

@@ -92,7 +92,7 @@ export default function NavBar() {
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="relative flex items-center justify-between h-16">
-              {/* Mobile menu button */}
+              {/* Botão Mobile */}
               <div className="absolute inset-y-0 left-0 flex items-center sm:hidden">
                 <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white transition-all duration-200 active:scale-95">
                   <span className="sr-only">Open main menu</span>
@@ -104,7 +104,7 @@ export default function NavBar() {
                 </Disclosure.Button>
               </div>
 
-              {/* Logo and brand */}
+              {/* Nome da aplicação */}
               <div className="flex-1 flex items-center justify-center sm:items-stretch sm:justify-start">
                 <Link
                   to="/"
@@ -116,7 +116,7 @@ export default function NavBar() {
                   </h1>
                 </Link>
 
-                {/* Desktop Navigation */}
+                {/* Desktop */}
                 <div className="hidden sm:block sm:ml-6">
                   <div className="flex space-x-1">
                     {navigation.map((item) => {
@@ -141,7 +141,7 @@ export default function NavBar() {
                             )}
                           />
                           <span>{item.name}</span>
-                          {/* Animated underline */}
+                          {/* Animação da Underline */}
                           <span 
                             className={classNames(
                               'absolute bottom-0 left-0 h-0.5 transition-all duration-300',
@@ -156,7 +156,7 @@ export default function NavBar() {
                 </div>
               </div>
 
-              {/* User info and Logout button */}
+              {/* Info do usuário e Logout */}
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                 <div className="flex items-center space-x-3 mr-4">
                   <UserIcon 
@@ -179,7 +179,7 @@ export default function NavBar() {
             </div>
           </div>
 
-          {/* Mobile menu (rest of the code remains the same) */}
+          {/* Mobile */}
           <Disclosure.Panel className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => {

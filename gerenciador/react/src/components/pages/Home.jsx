@@ -22,7 +22,7 @@ function App() {
           axios.get("/api/categories")
         ])
 
-        // Modify posts to ensure all required fields are present
+        //Garantir que todas campos obrigatórios estejam preenchidos
         const processedPosts = postsResponse.data.map(post => ({
           ...post,
           fileType: post.fileType || 'application/octet-stream',
@@ -59,7 +59,7 @@ function App() {
     try {
       const response = await axios.get(`/api/posts/${id}/download`)
       
-      // Create an anchor element to trigger download
+      // Cria uma âncora para iniciar o download do arquivo.
       const a = document.createElement('a')
       a.href = response.data.url
       a.download = response.data.originalFileName
@@ -78,7 +78,7 @@ function App() {
     downloadFile
   }
 
-  // Filtered posts
+  // Documentos Filtrados
   const filteredPosts = posts.filter((post) => {
     const matchesSearch = post.originalFileName
       .toLowerCase()
@@ -114,7 +114,7 @@ function App() {
           </button>
         </div>
 
-        {/* Search and Category Filter */}
+        {/* Search e filtro de categoria */}
         <div className="flex gap-4 mb-6">
           <input
             type="text"

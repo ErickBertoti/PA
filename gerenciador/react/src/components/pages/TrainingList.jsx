@@ -9,7 +9,6 @@ const TrainingList = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // State for full preview modal
   const [selectedTraining, setSelectedTraining] = useState(null);
 
   useEffect(() => {
@@ -26,7 +25,6 @@ const TrainingList = () => {
     });
   }, []);
 
-  // Function to get file type icon based on mime type
   const getFileIcon = (type) => {
     const fileIcons = {
       'image': FileImage,
@@ -47,13 +45,11 @@ const TrainingList = () => {
     return iconComponent;
   };
 
-  // Download file handler
   const downloadFile = async (training) => {
     try {
       const response = await axios.get(`/api/trainings/${training.id}/download`);
       const { url, originalFileName } = response.data;
       
-      // Create a temporary anchor element to trigger download
       const link = document.createElement('a');
       link.href = url;
       link.download = originalFileName;
@@ -209,7 +205,7 @@ const TrainingList = () => {
         </div>
       )}
 
-      {/* Full Preview Modal */}
+      {/* Preview completo */}
       {selectedTraining && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"

@@ -20,6 +20,7 @@ const Login = () => {
       return;
     }
 
+    //Executa o Login e cria o token
     try {
       const response = await axios.post('http://localhost:8080/api/login', {
         email,

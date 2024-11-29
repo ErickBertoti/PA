@@ -34,14 +34,14 @@ const ToolsAndLicenses = () => {
   useEffect(() => {
     let filtered = [...tools];
 
-    // Filter by responsible
+    // Filtrar pelo responsável
     if (filterConfig.responsible) {
       filtered = filtered.filter(tool => 
         tool.responsible.toLowerCase().includes(filterConfig.responsible.toLowerCase())
       );
     }
 
-    // Calculate and sort by usage period if needed
+    // Calculo para o periódo de uso
     if (filterConfig.usagePeriod !== 'all') {
       filtered.sort((a, b) => {
         const periodA = new Date(a.expirationDate) - new Date(a.acquisitionDate);
@@ -50,7 +50,7 @@ const ToolsAndLicenses = () => {
       });
     }
 
-    // Apply sorting if configured
+    // Aplica o ordem se preciso
     if (sortConfig.key) {
       filtered.sort((a, b) => {
         if (sortConfig.key === 'acquisitionDate' || sortConfig.key === 'expirationDate') {
@@ -87,7 +87,6 @@ const ToolsAndLicenses = () => {
     }));
   };
 
-  // Rest of the existing functions remain the same
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -247,7 +246,7 @@ const ToolsAndLicenses = () => {
         </div>
       ) : (
         <>
-          {/* Filters Section */}
+          {/* Seção dos filtros */}
           <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -285,7 +284,7 @@ const ToolsAndLicenses = () => {
             </div>
           </div>
 
-          {/* Table Section */}
+          {/* Seção da tabela */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full">

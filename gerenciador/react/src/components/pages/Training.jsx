@@ -15,7 +15,7 @@ const Training = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    // Fetch categories
+    // Fetch das categorias
     const token = localStorage.getItem('token');
     if (!token) {
       setMessage({ type: 'error', text: 'Você precisa estar autenticado para acessar esta página.' });
@@ -54,7 +54,7 @@ const Training = () => {
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
     
-    // Validate file size (50MB limit)
+    // Validar tamanho do arquivo (50MB de limite)
     if (selectedFile && selectedFile.size > 50 * 1024 * 1024) {
       setMessage({ 
         type: 'error', 
@@ -91,14 +91,14 @@ const Training = () => {
     formData.append('description', description);
     formData.append('categoryId', categoryId);
     
-    // Append training links - compatible with backend expectation
+    // Acrescenta os links
     trainingLinks.forEach((link, index) => {
       if (link.trim()) {
         formData.append(`links[${index}]`, link);
       }
     });
 
-    // Append file if exists
+    // Acrescenta o arquivo se houver um
     if (file) {
       formData.append('file', file);
     }
@@ -116,7 +116,7 @@ const Training = () => {
 
       setMessage({ type: 'success', text: 'Treinamento registrado com sucesso!' });
       
-      // Reset form
+      // Reseta formulário
       setTitle('');
       setDescription('');
       setCategoryId('');
