@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Pencil, Plus, AlertCircle, Wrench, Calendar, User, FileText, SortAsc, SortDesc } from 'lucide-react';
+import { Trash2, Pencil, Plus, AlertCircle, Wrench, Calendar, User, FileText, SortAsc, SortDesc, Filter } from 'lucide-react';
 import axios from "axios";
 
 const ToolsAndLicenses = () => {
@@ -19,7 +19,7 @@ const ToolsAndLicenses = () => {
   });
   const [filterConfig, setFilterConfig] = useState({
     responsible: '',
-    usagePeriod: 'all' // 'all', 'longest', 'shortest'
+    usagePeriod: 'all'
   });
 
   useEffect(() => {
@@ -34,14 +34,12 @@ const ToolsAndLicenses = () => {
   useEffect(() => {
     let filtered = [...tools];
 
-    // Filtrar pelo responsável
     if (filterConfig.responsible) {
       filtered = filtered.filter(tool => 
         tool.responsible.toLowerCase().includes(filterConfig.responsible.toLowerCase())
       );
     }
 
-    // Calculo para o periódo de uso
     if (filterConfig.usagePeriod !== 'all') {
       filtered.sort((a, b) => {
         const periodA = new Date(a.expirationDate) - new Date(a.acquisitionDate);
@@ -50,7 +48,6 @@ const ToolsAndLicenses = () => {
       });
     }
 
-    // Aplica o ordem se preciso
     if (sortConfig.key) {
       filtered.sort((a, b) => {
         if (sortConfig.key === 'acquisitionDate' || sortConfig.key === 'expirationDate') {
@@ -72,12 +69,18 @@ const ToolsAndLicenses = () => {
     return d.toLocaleDateString('pt-BR');
   };
 
-  const isExpiringSoon = (expirationDate) => {
+  const getExpirationStatus = (expirationDate) => {
     const today = new Date();
     const expDate = new Date(expirationDate);
     const diffTime = expDate - today;
     const diffDays = diffTime / (1000 * 3600 * 24);
-    return diffDays <= 7 && diffDays > 0;
+    
+    if (diffDays <= 7 && diffDays > 0) {
+      return 'warning';
+    } else if (diffDays <= 0) {
+      return 'expired';
+    }
+    return 'active';
   };
 
   const handleSort = (key) => {
@@ -115,11 +118,13 @@ const ToolsAndLicenses = () => {
   };
 
   const handleDelete = (id) => {
-    axios.delete(`/api/tools/${id}`)
-      .then(() => {
-        axios.get("/api/tools").then((response) => setTools(response.data));
-      })
-      .catch((error) => console.error("Erro ao deletar ferramenta:", error));
+    if (window.confirm("Tem certeza de que deseja excluir esta ferramenta?")) {
+      axios.delete(`/api/tools/${id}`)
+        .then(() => {
+          axios.get("/api/tools").then((response) => setTools(response.data));
+        })
+        .catch((error) => console.error("Erro ao deletar ferramenta:", error));
+    }
   };
 
   const handleEdit = (tool) => {
@@ -128,32 +133,33 @@ const ToolsAndLicenses = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center space-x-3">
-          <Wrench className="h-8 w-8 text-blue-600" />
-          <h2 className="text-3xl font-bold text-gray-800">Ferramentas e Licenças</h2>
+        <div className="flex items-center space-x-4">
+          <Wrench className="h-10 w-10 text-blue-600" />
+          <h2 className="text-4xl font-extrabold text-gray-900">Ferramentas e Licenças</h2>
         </div>
         <button
-          className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105"
+          className="flex items-center space-x-3 px-6 py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105"
           onClick={() => setShowForm(!showForm)}
         >
           {showForm ? (
             <>
-              <Trash2 className="h-5 w-5" />
-              <span>Cancelar</span>
+              <Trash2 className="h-6 w-6" />
+              <span className="font-semibold">Cancelar</span>
             </>
           ) : (
             <>
-              <Plus className="h-5 w-5" />
-              <span>Adicionar Ferramenta</span>
+              <Plus className="h-6 w-6" />
+      
+              <span className="font-semibold ">Adicionar Ferramenta</span>
             </>
           )}
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white p-6 rounded-xl shadow-lg mb-8">
+        <div className="bg-white p-8 rounded-2xl shadow-2xl mb-8 border-2 border-indigo-100">
           <h3 className="text-xl font-semibold text-gray-700 mb-4">
             {formData.id ? "Editar Ferramenta" : "Nova Ferramenta"}
           </h3>
@@ -238,130 +244,152 @@ const ToolsAndLicenses = () => {
         </div>
       )}
 
-      {tools.length === 0 ? (
-        <div className="text-center text-gray-600 p-12 bg-white rounded-xl shadow-lg">
-          <Pencil className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-xl font-semibold">Nenhuma ferramenta ou licença cadastrada ainda.</p>
-          <p className="mt-2 text-lg text-gray-500">Adicione novas ferramentas ou licenças utilizando o botão acima.</p>
+      {/* Filters Section */}
+      <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
+        <div className="flex items-center space-x-4 mb-4">
+          <Filter className="h-6 w-6 text-gray-600" />
+          <h3 className="text-xl font-semibold text-gray-800">Filtros</h3>
         </div>
-      ) : (
-        <>
-          {/* Seção dos filtros */}
-          <div className="bg-white p-4 rounded-xl shadow-lg mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Filtrar por Responsável
-                </label>
-                <input
-                  type="text"
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="Digite o nome do responsável"
-                  value={filterConfig.responsible}
-                  onChange={(e) => setFilterConfig(prev => ({
-                    ...prev,
-                    responsible: e.target.value
-                  }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Período de Uso
-                </label>
-                <select
-                  className="w-full p-2 border rounded-lg"
-                  value={filterConfig.usagePeriod}
-                  onChange={(e) => setFilterConfig(prev => ({
-                    ...prev,
-                    usagePeriod: e.target.value
-                  }))}
-                >
-                  <option value="all">Todos</option>
-                  <option value="longest">Maior Período</option>
-                  <option value="shortest">Menor Período</option>
-                </select>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filtrar por Responsável
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                className="w-full pl-10 p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+                placeholder="Digite o nome do responsável"
+                value={filterConfig.responsible}
+                onChange={(e) => setFilterConfig(prev => ({
+                  ...prev,
+                  responsible: e.target.value
+                }))}
+              />
             </div>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Período de Uso
+            </label>
+            <select
+              className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+              value={filterConfig.usagePeriod}
+              onChange={(e) => setFilterConfig(prev => ({
+                ...prev,
+                usagePeriod: e.target.value
+              }))}
+            >
+              <option value="all">Todos</option>
+              <option value="longest">Maior Período</option>
+              <option value="shortest">Menor Período</option>
+            </select>
+          </div>
+        </div>
+      </div>
 
-          {/* Seção da tabela */}
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead>
-                  <tr className="bg-gray-50 text-gray-700">
-                    <th className="px-6 py-4 text-left font-semibold">Nome</th>
-                    <th className="px-6 py-4 text-left font-semibold">Descrição</th>
-                    <th className="px-6 py-4 text-left font-semibold">
-                      <button 
-                        className="flex items-center space-x-1"
-                        onClick={() => handleSort('responsible')}
-                      >
-                        <span>Responsável</span>
-                        {sortConfig.key === 'responsible' && (
-                          sortConfig.direction === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
-                        )}
-                      </button>
+      {/* Table Section */}
+      {tools.length === 0 ? (
+        <div className="text-center bg-white p-16 rounded-2xl shadow-lg">
+          <Wrench className="h-20 w-20 text-blue-300 mx-auto mb-6" />
+          <p className="text-2xl font-bold text-gray-800 mb-4">Nenhuma ferramenta ou licença cadastrada</p>
+          <p className="text-lg text-gray-600">Adicione novas ferramentas ou licenças usando o botão acima</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  {[
+                    { key: 'name', label: 'Nome' },
+                    { key: 'description', label: 'Descrição' },
+                    { key: 'responsible', label: 'Responsável', sortable: true },
+                    { key: 'acquisitionDate', label: 'Aquisição', sortable: true },
+                    { key: 'expirationDate', label: 'Expiração', sortable: true },
+                    { key: 'actions', label: 'Ações', className: 'text-center' }
+                  ].map(({ key, label, sortable = false, className }) => (
+                    <th 
+                      key={key} 
+                      className={`px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${className || ''}`}
+                    >
+                      {sortable ? (
+                        <button 
+                          className="flex items-center space-x-2 hover:text-indigo-600 transition-colors"
+                          onClick={() => handleSort(key)}
+                        >
+                          <span>{label}</span>
+                          {sortConfig.key === key && (
+                            sortConfig.direction === 'asc' 
+                              ? <SortAsc className="h-4 w-4" /> 
+                              : <SortDesc className="h-4 w-4" />
+                          )}
+                        </button>
+                      ) : (
+                        label
+                      )}
                     </th>
-                    <th className="px-6 py-4 text-left font-semibold">
-                      <button 
-                        className="flex items-center space-x-1"
-                        onClick={() => handleSort('acquisitionDate')}
-                      >
-                        <span>Aquisição</span>
-                        {sortConfig.key === 'acquisitionDate' && (
-                          sortConfig.direction === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredTools.map((tool) => {
+                  const expirationStatus = getExpirationStatus(tool.expirationDate);
+                  return (
+                    <tr 
+                      key={tool.id} 
+                      className={`hover:bg-blue-50 transition-colors duration-200 ${
+                        expirationStatus === 'expired' 
+                          ? 'bg-red-50 text-red-800' 
+                          : expirationStatus === 'warning' 
+                          ? 'bg-yellow-50 text-yellow-800' 
+                          : ''
+                      }`}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tool.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{tool.description}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tool.responsible}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(tool.acquisitionDate)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(tool.expirationDate)}
+                        {expirationStatus === 'warning' && (
+                          <span className="ml-2 text-yellow-600 font-semibold">
+                            (Expira em breve!)
+                          </span>
                         )}
-                      </button>
-                    </th>
-                    <th className="px-6 py-4 text-left font-semibold">
-                      <button 
-                        className="flex items-center space-x-1"
-                        onClick={() => handleSort('expirationDate')}
-                      >
-                        <span>Expiração</span>
-                        {sortConfig.key === 'expirationDate' && (
-                          sortConfig.direction === 'asc' ? <SortAsc className="h-4 w-4" /> : <SortDesc className="h-4 w-4" />
+                        {expirationStatus === 'expired' && (
+                          <span className="ml-2 text-red-600 font-semibold">
+                            (Expirado!)
+                          </span>
                         )}
-                      </button>
-                    </th>
-                    <th className="px-6 py-4 text-center font-semibold">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {filteredTools.map((tool) => (
-                    <tr key={tool.id} className="hover:bg-gray-50 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap">{tool.name}</td>
-                      <td className="px-6 py-4">{tool.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{tool.responsible}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(tool.acquisitionDate)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{formatDate(tool.expirationDate)}</td>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-3">
-                          {isExpiringSoon(tool.expirationDate) && (
-                            <AlertCircle className="h-5 w-5 text-yellow-500" />
+                          {expirationStatus === 'warning' && (
+                            <AlertCircle className="h-5 w-5 text-yellow-500 animate-pulse" />
                           )}
                           <button
                             onClick={() => handleEdit(tool)}
-                            className="text-blue-600 hover:text-blue-700 transition-colors duration-200"
+                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 rounded-full hover:bg-blue-50"
                           >
                             <Pencil className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => handleDelete(tool.id)}
-                            className="text-red-600 hover:text-red-700 transition-colors duration-200"
+                            className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 rounded-full hover:bg-red-50"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
