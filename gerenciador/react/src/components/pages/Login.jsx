@@ -1,33 +1,48 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { FileText, Lock, Shield, User, Award } from 'lucide-react';
+import { FileText, Lock, Shield, User, Award, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const navigate = useNavigate();
+
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
     setSuccess(null);
 
+    // Validações
     if (!email || !password) {
       setError('Todos os campos devem ser preenchidos.');
       return;
     }
 
-    //Executa o Login e cria o token
+    if (!validateEmail(email)) {
+      setError('Por favor, insira um e-mail válido.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setError('A senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+
     try {
       const response = await axios.post('http://localhost:8080/api/login', {
         email,
         password,
       });
 
-      console.log(response.data);
       const { token } = response.data;
 
       localStorage.setItem('token', token);
@@ -38,9 +53,15 @@ const Login = () => {
       }, 2000);
     } catch (error) {
       setError(
-        error.response ? error.response.data.error : 'Erro ao realizar o login. Tente novamente.'
+        error.response 
+          ? error.response.data.error || 'Erro ao realizar o login. Verifique suas credenciais.'
+          : 'Erro de conexão. Tente novamente mais tarde.'
       );
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -85,6 +106,7 @@ const Login = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Digite seu e-mail"
                 />
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               </div>
@@ -99,13 +121,21 @@ const Login = () => {
               </label>
               <div className="relative">
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   id="password"
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-300"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  placeholder="Digite sua senha"
                 />
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <button
+                  type="button"
+                  onClick={togglePasswordVisibility}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
             </div>
 
@@ -126,13 +156,19 @@ const Login = () => {
           </form>
 
           {error && (
-            <div className="mt-4 text-red-500 text-sm border border-red-400 bg-red-100 p-3 rounded">
-              {error}
+            <div className="mt-4 text-red-600 text-sm border border-red-400 bg-red-100 p-3 rounded-lg flex items-center space-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span>{error}</span>
             </div>
           )}
           {success && (
-            <div className="mt-4 text-green-500 text-sm border border-green-400 bg-green-100 p-3 rounded">
-              {success}
+            <div className="mt-4 text-green-600 text-sm border border-green-400 bg-green-100 p-3 rounded-lg flex items-center space-x-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>{success}</span>
             </div>
           )}
         </div>
