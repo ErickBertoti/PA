@@ -59,13 +59,6 @@ export default function NavBar() {
       color: 'hover:text-blue-400'
     },
     { 
-      name: 'Registrar novo arquivo', 
-      current: location.pathname === '/newPost', 
-      href: '/newPost', 
-      icon: FilePlus,
-      color: 'hover:text-green-400'
-    },
-    { 
       name: 'Ferramentas e Licenças', 
       current: location.pathname === '/tools', 
       href: '/tools', 
