@@ -6,7 +6,7 @@ Todo código do Backend está na pasta express, só rode os comando do Back no t
 
 ### .env
 
-Crie um arquivo .env no express e insira as linhas abaixo:
+Crie o arquivo .env no express e insira as linhas abaixo:
 
 ```env
 DATABASE_URL='mysql://root:ogGRfvPABVBvInbdNxmbJxDPZhIgrEjF@maglev.proxy.rlwy.net:34044/railway/railway'
