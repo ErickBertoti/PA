@@ -9,7 +9,7 @@ Todo código do Backend está na pasta express, só rode os comando do Back no t
 Crie um arquivo .env no express e insira as linhas abaixo:
 
 ```env
-DATABASE_URL='mysql://root:senha@localhost:3306/nomedobanco'
+DATABASE_URL='mysql://root:ogGRfvPABVBvInbdNxmbJxDPZhIgrEjF@maglev.proxy.rlwy.net:34044/railway/railway'
 
 AWS_BUCKET_NAME='pa-gerenciador-arquivos'
 AWS_BUCKET_REGION='us-east-1'
@@ -19,7 +19,7 @@ Também iriam aqui as chaves da AWS, como são privadas, pedimos que peça à no
 JWT_SECRET_KEY='fLz8@iC6zP#m0U76vx3h23Qx0VjzE8Fr'
 ```
 
-Adicione a Url do banco local que criou. A [database url](https://www.prisma.io/docs/concepts/database-connectors/mysql#base-url-and-path) tem que ser pra um banco MySQL, se quiser usar outro precisa alterar o prisma antes. 
+Nesta nova versão, o banco está hospedado no Railway, você não precisa se preocupar em ter o MySql no computador. 
 
 
 ## Executar
