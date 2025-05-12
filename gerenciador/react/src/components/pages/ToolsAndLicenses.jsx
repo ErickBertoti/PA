@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash2, Pencil, Plus, AlertCircle, Wrench, Calendar, User, FileText, SortAsc, SortDesc, Filter } from 'lucide-react';
+import { Trash2, Pencil, Plus, AlertCircle, Wrench, Calendar, User, FileText, SortAsc, SortDesc, Filter, Mail, Clock } from 'lucide-react';
 import axios from "axios";
 
 const ToolsAndLicenses = () => {
@@ -9,6 +9,7 @@ const ToolsAndLicenses = () => {
     name: "",
     description: "",
     responsible: "",
+    responsibleEmail: "",
     acquisitionDate: "",
     expirationDate: "",
   });
@@ -19,17 +20,22 @@ const ToolsAndLicenses = () => {
   });
   const [filterConfig, setFilterConfig] = useState({
     responsible: '',
-    usagePeriod: 'all'
+    usagePeriod: 'all',
+    expirationStatus: 'all'
   });
 
   useEffect(() => {
+    fetchTools();
+  }, []);
+
+  const fetchTools = () => {
     axios.get("/api/tools")
       .then((response) => {
         setTools(response.data);
         setFilteredTools(response.data);
       })
       .catch((error) => console.error("Erro ao carregar ferramentas:", error));
-  }, []);
+  };
 
   useEffect(() => {
     let filtered = [...tools];
@@ -38,6 +44,27 @@ const ToolsAndLicenses = () => {
       filtered = filtered.filter(tool => 
         tool.responsible.toLowerCase().includes(filterConfig.responsible.toLowerCase())
       );
+    }
+
+    if (filterConfig.expirationStatus !== 'all') {
+      const today = new Date();
+      if (filterConfig.expirationStatus === 'expired') {
+        filtered = filtered.filter(tool => new Date(tool.expirationDate) < today);
+      } else if (filterConfig.expirationStatus === 'warning') {
+        filtered = filtered.filter(tool => {
+          const expDate = new Date(tool.expirationDate);
+          const diffTime = expDate - today;
+          const diffDays = diffTime / (1000 * 3600 * 24);
+          return diffDays <= 30 && diffDays > 0;
+        });
+      } else if (filterConfig.expirationStatus === 'active') {
+        filtered = filtered.filter(tool => {
+          const expDate = new Date(tool.expirationDate);
+          const diffTime = expDate - today;
+          const diffDays = diffTime / (1000 * 3600 * 24);
+          return diffDays > 30;
+        });
+      }
     }
 
     if (filterConfig.usagePeriod !== 'all') {
@@ -75,12 +102,27 @@ const ToolsAndLicenses = () => {
     const diffTime = expDate - today;
     const diffDays = diffTime / (1000 * 3600 * 24);
     
-    if (diffDays <= 7 && diffDays > 0) {
+    if (diffDays <= 30 && diffDays > 7) {
+      return 'notice';
+    } else if (diffDays <= 7 && diffDays > 0) {
       return 'warning';
     } else if (diffDays <= 0) {
       return 'expired';
     }
     return 'active';
+  };
+
+  const getLastNotificationInfo = (tool) => {
+    if (!tool.lastNotification) return "Nunca notificado";
+    
+    const lastNotif = new Date(tool.lastNotification);
+    const today = new Date();
+    const diffTime = Math.abs(today - lastNotif);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Notificado hoje";
+    if (diffDays === 1) return "Notificado ontem";
+    return `Notificado há ${diffDays} dias`;
   };
 
   const handleSort = (key) => {
@@ -90,6 +132,11 @@ const ToolsAndLicenses = () => {
     }));
   };
 
+  const validateEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -97,21 +144,40 @@ const ToolsAndLicenses = () => {
       alert("A data de aquisição não pode ser posterior à data de expiração.");
       return;
     }
+    
+    if (!validateEmail(formData.responsibleEmail)) {
+      alert("Por favor, insira um email válido.");
+      return;
+    }
 
     if (formData.id) {
       axios.put(`/api/tools/${formData.id}`, formData)
         .then(() => {
           setShowForm(false);
-          setFormData({});
-          axios.get("/api/tools").then((response) => setTools(response.data));
+          setFormData({
+            name: "",
+            description: "",
+            responsible: "",
+            responsibleEmail: "",
+            acquisitionDate: "",
+            expirationDate: "",
+          });
+          fetchTools();
         })
         .catch((error) => console.error("Erro ao atualizar ferramenta:", error));
     } else {
       axios.post("/api/tools", formData)
         .then(() => {
           setShowForm(false);
-          setFormData({});
-          axios.get("/api/tools").then((response) => setTools(response.data));
+          setFormData({
+            name: "",
+            description: "",
+            responsible: "",
+            responsibleEmail: "",
+            acquisitionDate: "",
+            expirationDate: "",
+          });
+          fetchTools();
         })
         .catch((error) => console.error("Erro ao adicionar ferramenta:", error));
     }
@@ -121,14 +187,18 @@ const ToolsAndLicenses = () => {
     if (window.confirm("Tem certeza de que deseja excluir esta ferramenta?")) {
       axios.delete(`/api/tools/${id}`)
         .then(() => {
-          axios.get("/api/tools").then((response) => setTools(response.data));
+          fetchTools();
         })
         .catch((error) => console.error("Erro ao deletar ferramenta:", error));
     }
   };
 
   const handleEdit = (tool) => {
-    setFormData(tool);
+    setFormData({
+      ...tool,
+      acquisitionDate: new Date(tool.acquisitionDate).toISOString().split('T')[0],
+      expirationDate: new Date(tool.expirationDate).toISOString().split('T')[0]
+    });
     setShowForm(true);
   };
 
@@ -151,8 +221,7 @@ const ToolsAndLicenses = () => {
           ) : (
             <>
               <Plus className="h-6 w-6" />
-      
-              <span className="font-semibold ">Adicionar Ferramenta</span>
+              <span className="font-semibold">Adicionar Ferramenta</span>
             </>
           )}
         </button>
@@ -196,6 +265,18 @@ const ToolsAndLicenses = () => {
                 placeholder="Responsável"
                 value={formData.responsible}
                 onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+                className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                required
+              />
+            </div>
+            <div className="flex items-center space-x-3">
+              <Mail className="h-5 w-5 text-gray-400" />
+              <input
+                type="email"
+                name="responsibleEmail"
+                placeholder="Email do Responsável"
+                value={formData.responsibleEmail}
+                onChange={(e) => setFormData({ ...formData, responsibleEmail: e.target.value })}
                 className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                 required
               />
@@ -286,6 +367,24 @@ const ToolsAndLicenses = () => {
               <option value="shortest">Menor Período</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Status de Expiração
+            </label>
+            <select
+              className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+              value={filterConfig.expirationStatus}
+              onChange={(e) => setFilterConfig(prev => ({
+                ...prev,
+                expirationStatus: e.target.value
+              }))}
+            >
+              <option value="all">Todos</option>
+              <option value="active">Ativos</option>
+              <option value="warning">Próximos de expirar</option>
+              <option value="expired">Expirados</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -306,8 +405,10 @@ const ToolsAndLicenses = () => {
                     { key: 'name', label: 'Nome' },
                     { key: 'description', label: 'Descrição' },
                     { key: 'responsible', label: 'Responsável', sortable: true },
+                    { key: 'responsibleEmail', label: 'Email' },
                     { key: 'acquisitionDate', label: 'Aquisição', sortable: true },
                     { key: 'expirationDate', label: 'Expiração', sortable: true },
+                    { key: 'notificationStatus', label: 'Notificações' },
                     { key: 'actions', label: 'Ações', className: 'text-center' }
                   ].map(({ key, label, sortable = false, className }) => (
                     <th 
@@ -344,18 +445,26 @@ const ToolsAndLicenses = () => {
                           ? 'bg-red-50 text-red-800' 
                           : expirationStatus === 'warning' 
                           ? 'bg-yellow-50 text-yellow-800' 
+                          : expirationStatus === 'notice'
+                          ? 'bg-orange-50 text-orange-800'
                           : ''
                       }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tool.name}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{tool.description}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tool.responsible}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{tool.responsibleEmail}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(tool.acquisitionDate)}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDate(tool.expirationDate)}
+                        {expirationStatus === 'notice' && (
+                          <span className="ml-2 text-orange-600 font-semibold">
+                            (Expira em breve)
+                          </span>
+                        )}
                         {expirationStatus === 'warning' && (
                           <span className="ml-2 text-yellow-600 font-semibold">
-                            (Expira em breve!)
+                            (Expira em menos de 7 dias!)
                           </span>
                         )}
                         {expirationStatus === 'expired' && (
@@ -364,20 +473,31 @@ const ToolsAndLicenses = () => {
                           </span>
                         )}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div className="flex items-center space-x-2">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          <span>{getLastNotificationInfo(tool)}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-3">
-                          {expirationStatus === 'warning' && (
-                            <AlertCircle className="h-5 w-5 text-yellow-500 animate-pulse" />
+                          {(expirationStatus === 'warning' || expirationStatus === 'notice') && (
+                            <div className="relative" title="Notificações automáticas ativadas">
+                              <Mail className="h-5 w-5 text-blue-500" />
+                              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full" />
+                            </div>
                           )}
                           <button
                             onClick={() => handleEdit(tool)}
                             className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 rounded-full hover:bg-blue-50"
+                            title="Editar"
                           >
                             <Pencil className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => handleDelete(tool.id)}
                             className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 rounded-full hover:bg-red-50"
+                            title="Excluir"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
@@ -388,6 +508,14 @@ const ToolsAndLicenses = () => {
                 })}
               </tbody>
             </table>
+          </div>
+          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center text-sm text-gray-500">
+              <Mail className="h-5 w-5 text-blue-500 mr-2" />
+              <span>
+                Notificações automáticas são enviadas quando uma ferramenta ou licença está a 30/15 dias ou menos de uma semana de expirar.
+              </span>
+            </div>
           </div>
         </div>
       )}

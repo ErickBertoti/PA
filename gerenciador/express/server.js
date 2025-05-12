@@ -5,9 +5,12 @@ import sharp from 'sharp';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import path from 'path';
+import cron from 'node-cron';
 
 import { PrismaClient } from '@prisma/client';
 import { uploadFile, deleteFile, getObjectSignedUrl } from './s3.js';
+import { checkExpiringTools } from './emailService.js';
+
 
 const app = express();
 const prisma = new PrismaClient();
@@ -163,40 +166,72 @@ app.get("/api/tools", authenticateToken, async (req, res) => {
   res.send(tools);
 });
 
-// Rota para criar uma nova ferramenta/licença
+// Rota para criar uma nova ferramenta/licença (atualizada)
 app.post("/api/tools", authenticateToken, async (req, res) => {
-  const { name, description, responsible, acquisitionDate, expirationDate } = req.body;
+  const { name, description, responsible, responsibleEmail, acquisitionDate, expirationDate } = req.body;
 
-  const tool = await prisma.tool.create({
-    data: {
-      name,
-      description,
-      responsible,
-      acquisitionDate: new Date(acquisitionDate),
-      expirationDate: new Date(expirationDate),
-    },
-  });
+  if (!name || !description || !responsible || !responsibleEmail || !acquisitionDate || !expirationDate) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
 
-  res.status(201).send(tool);
+  // Validação básica de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(responsibleEmail)) {
+    return res.status(400).json({ error: 'Email inválido' });
+  }
+
+  try {
+    const tool = await prisma.tool.create({
+      data: {
+        name,
+        description,
+        responsible,
+        responsibleEmail,
+        acquisitionDate: new Date(acquisitionDate),
+        expirationDate: new Date(expirationDate),
+      },
+    });
+
+    res.status(201).send(tool);
+  } catch (error) {
+    console.error("Erro ao criar ferramenta:", error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
-// Rota para atualizar uma ferramenta/licença
+// Rota para atualizar uma ferramenta/licença (atualizada)
 app.put("/api/tools/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { name, description, responsible, acquisitionDate, expirationDate } = req.body;
+  const { name, description, responsible, responsibleEmail, acquisitionDate, expirationDate } = req.body;
 
-  const tool = await prisma.tool.update({
-    where: { id: Number(id) },
-    data: {
-      name,
-      description,
-      responsible,
-      acquisitionDate: new Date(acquisitionDate),
-      expirationDate: new Date(expirationDate),
-    },
-  });
+  if (!name || !description || !responsible || !responsibleEmail || !acquisitionDate || !expirationDate) {
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+  }
 
-  res.send(tool);
+  // Validação básica de email
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(responsibleEmail)) {
+    return res.status(400).json({ error: 'Email inválido' });
+  }
+
+  try {
+    const tool = await prisma.tool.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        description,
+        responsible,
+        responsibleEmail,
+        acquisitionDate: new Date(acquisitionDate),
+        expirationDate: new Date(expirationDate),
+      },
+    });
+
+    res.send(tool);
+  } catch (error) {
+    console.error("Erro ao atualizar ferramenta:", error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
 });
 
 // Rota para deletar uma ferramenta/licença
@@ -453,6 +488,12 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 // Rota para verificar se o usuário está autenticado
 app.get("/api/authenticated", authenticateToken, (req, res) => {
   return res.status(200).json({ isAuthenticated: true });
+});
+
+// Configurar tarefa CRON para verificar ferramentas que expiram em breve todos os dias às 6h da manhã
+cron.schedule('* * * * *', async () => {
+  console.log('Executando verificação diária de ferramentas próximas da expiração...');
+  await checkExpiringTools();
 });
 
 app.listen(8080, () => console.log("listening on port 8080"));

@@ -30,8 +30,10 @@ model Tool {
   name             String
   description      String
   responsible      String
+  responsibleEmail String
   acquisitionDate  DateTime
   expirationDate   DateTime
+  lastNotification DateTime?
 }
 
 model Training {

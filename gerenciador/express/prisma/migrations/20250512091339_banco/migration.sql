@@ -25,8 +25,10 @@ CREATE TABLE `Tool` (
     `name` VARCHAR(191) NOT NULL,
     `description` VARCHAR(191) NOT NULL,
     `responsible` VARCHAR(191) NOT NULL,
+    `responsibleEmail` VARCHAR(191) NOT NULL,
     `acquisitionDate` DATETIME(3) NOT NULL,
     `expirationDate` DATETIME(3) NOT NULL,
+    `lastNotification` DATETIME(3) NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
