@@ -84,26 +84,69 @@ export const sendExpirationNotification = async (tool) => {
       to: responsibleEmail,
       subject: `ALERTA: Ferramenta ${name} expira em ${daysUntilExpiration} dias`,
       html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          <h2 style="color: #e53e3e;">Alerta de Expiração de Ferramenta</h2>
-          <p>Olá, ${responsible}.</p>
-          <p>Este é um aviso importante sobre a ferramenta/licença sob sua responsabilidade:</p>
-          
-          <div style="background-color: #f8f8f8; padding: 15px; border-left: 4px solid #3182ce; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #3182ce;">${name}</h3>
-            <p><strong>Descrição:</strong> ${description}</p>
-            <p><strong>Data de Expiração:</strong> ${formattedDate}</p>
-            <p><strong>Dias Restantes:</strong> <span style="color: #e53e3e; font-weight: bold;">${daysUntilExpiration} dias</span></p>
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Alerta de Expiração</title>
+        </head>
+        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background-color: #f9fafb;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); margin-top: 20px; margin-bottom: 20px;">
+            <!-- Cabeçalho -->
+            <div style="background: linear-gradient(135deg, #4f46e5, #7c3aed); padding: 30px 25px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">Alerta de Expiração</h1>
+              <p style="color: rgba(255, 255, 255, 0.9); margin: 8px 0 0; font-size: 16px;">Ferramenta/Licença Próxima ao Vencimento</p>
+            </div>
+            
+            <!-- Conteúdo -->
+            <div style="padding: 30px 25px;">
+              <p style="font-size: 16px; line-height: 1.6; margin-top: 0;">Olá, <strong style="color: #4f46e5;">${responsible}</strong>.</p>
+              <p style="font-size: 16px; line-height: 1.6;">Este é um aviso importante sobre a ferramenta/licença sob sua responsabilidade:</p>
+              
+              <!-- Card da ferramenta -->
+              <div style="background-color: #f3f4f6; border-radius: 10px; padding: 20px; margin: 25px 0; border-left: 5px solid #4f46e5; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);">
+                <h2 style="margin-top: 0; color: #4f46e5; font-size: 20px; font-weight: 600;">${name}</h2>
+                
+                <div style="margin: 15px 0;">
+                  <p style="margin: 8px 0; font-size: 15px;">
+                    <strong style="color: #4b5563; display: inline-block; width: 100px;">Descrição:</strong> 
+                    <span>${description}</span>
+                  </p>
+                  
+                  <p style="margin: 8px 0; font-size: 15px;">
+                    <strong style="color: #4b5563; display: inline-block; width: 100px;">Expiração:</strong> 
+                    <span style="font-weight: 500;">${formattedDate}</span>
+                  </p>
+                  
+                  <div style="background-color: #fee2e2; border-radius: 8px; padding: 10px 15px; margin-top: 15px; display: flex; align-items: center;">
+                    <div style="background-color: #ef4444; width: 8px; height: 8px; border-radius: 50%; margin-right: 10px;"></div>
+                    <p style="margin: 0; font-size: 15px;">
+                      <strong style="color: #b91c1c;">Dias Restantes:</strong> 
+                      <span style="color: #b91c1c; font-weight: 700;">${daysUntilExpiration} dias</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <p style="font-size: 16px; line-height: 1.6;">Por favor, tome as medidas necessárias para renovar esta licença ou ferramenta antes que expire.</p>
+              
+              <!-- Botão de ação -->
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="#" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; text-decoration: none; padding: 12px 25px; border-radius: 6px; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2);">Acessar Sistema</a>
+              </div>
+              
+              <p style="font-size: 16px; line-height: 1.6;">Atenciosamente,<br><strong>Sistema de Gerenciamento de Ferramentas e Licenças</strong></p>
+            </div>
+            
+            <!-- Rodapé -->
+            <div style="background-color: #f3f4f6; padding: 20px 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="font-size: 13px; color: #6b7280; margin: 0;">Este é um email automático. Não responda a esta mensagem.</p>
+              <p style="font-size: 13px; color: #6b7280; margin: 10px 0 0;">© 2025 Sistema de Gerenciamento de Ferramentas e Licenças</p>
+            </div>
           </div>
-          
-          <p>Por favor, tome as medidas necessárias para renovar esta licença ou ferramenta antes que expire.</p>
-          
-          <p>Atenciosamente,<br>Sistema de Gerenciamento de Ferramentas e Licenças</p>
-          
-          <div style="font-size: 12px; color: #666; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px;">
-            Este é um email automático. Não responda a esta mensagem.
-          </div>
-        </div>
+        </body>
+        </html>
       `,
     };
 

@@ -23,18 +23,24 @@ const ToolsAndLicenses = () => {
     usagePeriod: 'all',
     expirationStatus: 'all'
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchTools();
   }, []);
 
   const fetchTools = () => {
+    setIsLoading(true);
     axios.get("/api/tools")
       .then((response) => {
         setTools(response.data);
         setFilteredTools(response.data);
+        setIsLoading(false);
       })
-      .catch((error) => console.error("Erro ao carregar ferramentas:", error));
+      .catch((error) => {
+        console.error("Erro ao carregar ferramentas:", error);
+        setIsLoading(false);
+      });
   };
 
   useEffect(() => {
@@ -203,144 +209,171 @@ const ToolsAndLicenses = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center space-x-4">
-          <Wrench className="h-10 w-10 text-blue-600" />
-          <h2 className="text-4xl font-extrabold text-gray-900">Ferramentas e Licenças</h2>
+    <div className="p-6 max-w-7xl mx-auto bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen">
+      {/* Header com efeito de glassmorphism */}
+      <div className="relative mb-10 overflow-hidden">
+        <div className="absolute inset-0 bg-blue-600 opacity-5 rounded-3xl"></div>
+        <div className="absolute -top-24 -left-24 w-64 h-64 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-10 blur-3xl"></div>
+        <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full opacity-10 blur-3xl"></div>
+        
+        <div className="relative flex justify-between items-center p-6 backdrop-blur-sm bg-white/70 rounded-3xl shadow-lg border border-white/20 mb-8 animate-fadeIn">
+          <div className="flex items-center space-x-4">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg transform rotate-3 hover:rotate-0 transition-all duration-300">
+              <Wrench className="h-10 w-10 text-white" />
+            </div>
+            <h2 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-700">
+              Ferramentas e Licenças
+            </h2>
+          </div>
+          <button
+            className="group flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-indigo-200/50 transition-all duration-300 ease-out transform hover:-translate-y-1"
+            onClick={() => setShowForm(!showForm)}
+          >
+            <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl opacity-0 group-hover:opacity-70 group-hover:blur-md transition-all duration-300"></span>
+            <span className="relative flex items-center space-x-2">
+              {showForm ? (
+                <>
+                  <Trash2 className="h-6 w-6" />
+                  <span className="font-semibold">Cancelar</span>
+                </>
+              ) : (
+                <>
+                  <Plus className="h-6 w-6" />
+                  <span className="font-semibold">Adicionar Ferramenta</span>
+                </>
+              )}
+            </span>
+          </button>
         </div>
-        <button
-          className="flex items-center space-x-3 px-6 py-3 bg-blue-600 text-white rounded-xl shadow-lg hover:bg-blue-700 transition-all duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105"
-          onClick={() => setShowForm(!showForm)}
-        >
-          {showForm ? (
-            <>
-              <Trash2 className="h-6 w-6" />
-              <span className="font-semibold">Cancelar</span>
-            </>
-          ) : (
-            <>
-              <Plus className="h-6 w-6" />
-              <span className="font-semibold">Adicionar Ferramenta</span>
-            </>
-          )}
-        </button>
       </div>
 
+      {/* Formulário com animação de entrada/saída */}
       {showForm && (
-        <div className="bg-white p-8 rounded-2xl shadow-2xl mb-8 border-2 border-indigo-100">
-          <h3 className="text-xl font-semibold text-gray-700 mb-4">
-            {formData.id ? "Editar Ferramenta" : "Nova Ferramenta"}
-          </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="bg-white p-8 rounded-3xl shadow-xl mb-8 border border-indigo-100 animate-slideDown">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-md">
+              {formData.id ? <Pencil className="h-6 w-6 text-white" /> : <Plus className="h-6 w-6 text-white" />}
+            </div>
+            <h3 className="text-2xl font-bold text-gray-800">
+              {formData.id ? "Editar Ferramenta" : "Nova Ferramenta"}
+            </h3>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="flex items-center space-x-3">
-              <Pencil className="h-5 w-5 text-gray-400" />
+              <Pencil className="h-5 w-5 text-indigo-400" />
               <input
                 type="text"
                 name="name"
                 placeholder="Nome"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="p-3 border-2 border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-200"
                 required
               />
             </div>
             <div className="flex items-center space-x-3">
-              <FileText className="h-5 w-5 text-gray-400" />
+              <FileText className="h-5 w-5 text-indigo-400" />
               <input
                 type="text"
                 name="description"
                 placeholder="Descrição"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="p-3 border-2 border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-200"
                 required
               />
             </div>
             <div className="flex items-center space-x-3">
-              <User className="h-5 w-5 text-gray-400" />
+              <User className="h-5 w-5 text-indigo-400" />
               <input
                 type="text"
                 name="responsible"
                 placeholder="Responsável"
                 value={formData.responsible}
                 onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-                className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="p-3 border-2 border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-200"
                 required
               />
             </div>
             <div className="flex items-center space-x-3">
-              <Mail className="h-5 w-5 text-gray-400" />
+              <Mail className="h-5 w-5 text-indigo-400" />
               <input
                 type="email"
                 name="responsibleEmail"
                 placeholder="Email do Responsável"
                 value={formData.responsibleEmail}
                 onChange={(e) => setFormData({ ...formData, responsibleEmail: e.target.value })}
-                className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                className="p-3 border-2 border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-200"
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-gray-400" />
+                <Calendar className="h-5 w-5 text-indigo-400" />
                 <input
                   type="date"
                   name="acquisitionDate"
                   value={formData.acquisitionDate}
                   onChange={(e) => setFormData({ ...formData, acquisitionDate: e.target.value })}
-                  className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="p-3 border-2 border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-200"
                   required
                 />
               </div>
               <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-gray-400" />
+                <Calendar className="h-5 w-5 text-indigo-400" />
                 <input
                   type="date"
                   name="expirationDate"
                   value={formData.expirationDate}
                   onChange={(e) => setFormData({ ...formData, expirationDate: e.target.value })}
-                  className="p-3 border-2 border-gray-200 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="p-3 border-2 border-gray-200 rounded-xl w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 hover:border-indigo-200"
                   required
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="w-full px-6 py-3 bg-green-600 text-white rounded-lg shadow-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105 flex items-center justify-center space-x-2"
+              className="group relative w-full px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl shadow-lg hover:shadow-green-200/50 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden"
             >
-              {formData.id ? (
-                <>
-                  <Pencil className="h-5 w-5" />
-                  <span>Atualizar</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="h-5 w-5" />
-                  <span>Adicionar</span>
-                </>
-              )}
+              <span className="absolute inset-0 w-full h-full bg-white opacity-0 group-hover:opacity-20 group-hover:blur-sm transition-all duration-300"></span>
+              <span className="relative flex items-center justify-center space-x-2">
+                {formData.id ? (
+                  <>
+                    <Pencil className="h-5 w-5" />
+                    <span className="font-semibold">Atualizar</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-5 w-5" />
+                    <span className="font-semibold">Adicionar</span>
+                  </>
+                )}
+              </span>
             </button>
           </form>
         </div>
       )}
 
-      {/* Filters Section */}
-      <div className="bg-white p-6 rounded-2xl shadow-lg mb-6 border border-gray-100">
-        <div className="flex items-center space-x-4 mb-4">
-          <Filter className="h-6 w-6 text-gray-600" />
-          <h3 className="text-xl font-semibold text-gray-800">Filtros</h3>
+      {/* Seção de Filtros com design de cartão elevado */}
+      <div className="bg-white p-6 rounded-3xl shadow-lg mb-8 border border-gray-100 hover:shadow-xl transition-shadow duration-300 animate-fadeIn">
+        <div className="flex items-center space-x-4 mb-6">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-md">
+            <Filter className="h-6 w-6 text-white" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-800">Filtros</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="group">
+            <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-indigo-600 transition-colors">
               Filtrar por Responsável
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition-colors" />
               <input
                 type="text"
-                className="w-full pl-10 p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+                className="w-full pl-10 p-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 hover:border-indigo-200"
                 placeholder="Digite o nome do responsável"
                 value={filterConfig.responsible}
                 onChange={(e) => setFilterConfig(prev => ({
@@ -350,12 +383,13 @@ const ToolsAndLicenses = () => {
               />
             </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          
+          <div className="group">
+            <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-indigo-600 transition-colors">
               Período de Uso
             </label>
             <select
-              className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 hover:border-indigo-200 appearance-none bg-white"
               value={filterConfig.usagePeriod}
               onChange={(e) => setFilterConfig(prev => ({
                 ...prev,
@@ -366,13 +400,19 @@ const ToolsAndLicenses = () => {
               <option value="longest">Maior Período</option>
               <option value="shortest">Menor Período</option>
             </select>
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          
+          <div className="group">
+            <label className="block text-sm font-medium text-gray-700 mb-2 group-hover:text-indigo-600 transition-colors">
               Status de Expiração
             </label>
             <select
-              className="w-full p-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all duration-300"
+              className="w-full p-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 hover:border-indigo-200 appearance-none bg-white"
               value={filterConfig.expirationStatus}
               onChange={(e) => setFilterConfig(prev => ({
                 ...prev,
@@ -384,22 +424,43 @@ const ToolsAndLicenses = () => {
               <option value="warning">Próximos de expirar</option>
               <option value="expired">Expirados</option>
             </select>
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Table Section */}
-      {tools.length === 0 ? (
-        <div className="text-center bg-white p-16 rounded-2xl shadow-lg">
-          <Wrench className="h-20 w-20 text-blue-300 mx-auto mb-6" />
+      {/* Estado de carregamento */}
+      {isLoading ? (
+        <div className="flex justify-center items-center p-16 bg-white rounded-3xl shadow-lg animate-pulse">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-lg font-medium text-gray-700">Carregando ferramentas...</p>
+          </div>
+        </div>
+      ) : tools.length === 0 ? (
+        <div className="text-center bg-white p-16 rounded-3xl shadow-lg transform transition-all duration-300 hover:shadow-xl animate-fadeIn">
+          <div className="p-6 bg-blue-50 rounded-full w-32 h-32 mx-auto mb-6 flex items-center justify-center">
+            <Wrench className="h-20 w-20 text-blue-400" />
+          </div>
           <p className="text-2xl font-bold text-gray-800 mb-4">Nenhuma ferramenta ou licença cadastrada</p>
-          <p className="text-lg text-gray-600">Adicione novas ferramentas ou licenças usando o botão acima</p>
+          <p className="text-lg text-gray-600 mb-8">Adicione novas ferramentas ou licenças usando o botão acima</p>
+          <button
+            onClick={() => setShowForm(true)}
+            className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg hover:shadow-indigo-200/50 transition-all duration-300 transform hover:-translate-y-1 flex items-center space-x-2 mx-auto"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Adicionar Agora</span>
+          </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100 transition-all duration-300 hover:shadow-xl animate-fadeIn">
           <div className="overflow-x-auto">
             <table className="min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
                 <tr>
                   {[
                     { key: 'name', label: 'Nome' },
@@ -417,14 +478,18 @@ const ToolsAndLicenses = () => {
                     >
                       {sortable ? (
                         <button 
-                          className="flex items-center space-x-2 hover:text-indigo-600 transition-colors"
+                          className="flex items-center space-x-2 hover:text-indigo-600 transition-colors group"
                           onClick={() => handleSort(key)}
                         >
-                          <span>{label}</span>
-                          {sortConfig.key === key && (
+                          <span className="group-hover:font-bold transition-all">{label}</span>
+                          {sortConfig.key === key ? (
                             sortConfig.direction === 'asc' 
-                              ? <SortAsc className="h-4 w-4" /> 
-                              : <SortDesc className="h-4 w-4" />
+                              ? <SortAsc className="h-4 w-4 text-indigo-500" /> 
+                              : <SortDesc className="h-4 w-4 text-indigo-500" />
+                          ) : (
+                            <span className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <SortAsc className="h-4 w-4 text-gray-400" />
+                            </span>
                           )}
                         </button>
                       ) : (
@@ -435,68 +500,72 @@ const ToolsAndLicenses = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredTools.map((tool) => {
+                {filteredTools.map((tool, index) => {
                   const expirationStatus = getExpirationStatus(tool.expirationDate);
                   return (
                     <tr 
                       key={tool.id} 
-                      className={`hover:bg-blue-50 transition-colors duration-200 ${
+                      className={`hover:bg-blue-50 transition-all duration-200 animate-fadeIn ${
                         expirationStatus === 'expired' 
-                          ? 'bg-red-50 text-red-800' 
+                          ? 'bg-red-50 text-red-800 hover:bg-red-100' 
                           : expirationStatus === 'warning' 
-                          ? 'bg-yellow-50 text-yellow-800' 
+                          ? 'bg-yellow-50 text-yellow-800 hover:bg-yellow-100' 
                           : expirationStatus === 'notice'
-                          ? 'bg-orange-50 text-orange-800'
+                          ? 'bg-orange-50 text-orange-800 hover:bg-orange-100'
                           : ''
                       }`}
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tool.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{tool.name}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{tool.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{tool.responsible}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{tool.responsible}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{tool.responsibleEmail}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDate(tool.acquisitionDate)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(tool.expirationDate)}
-                        {expirationStatus === 'notice' && (
-                          <span className="ml-2 text-orange-600 font-semibold">
-                            (Expira em breve)
-                          </span>
-                        )}
-                        {expirationStatus === 'warning' && (
-                          <span className="ml-2 text-yellow-600 font-semibold">
-                            (Expira em menos de 7 dias!)
-                          </span>
-                        )}
-                        {expirationStatus === 'expired' && (
-                          <span className="ml-2 text-red-600 font-semibold">
-                            (Expirado!)
-                          </span>
-                        )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <div className="flex items-center">
+                          <span>{formatDate(tool.expirationDate)}</span>
+                          {expirationStatus === 'notice' && (
+                            <span className="ml-2 px-2 py-1 text-xs font-medium bg-orange-100 text-orange-800 rounded-full">
+                              Expira em breve
+                            </span>
+                          )}
+                          {expirationStatus === 'warning' && (
+                            <span className="ml-2 px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full animate-pulse">
+                              &lt; 7 dias!
+                            </span>
+                          )}
+                          {expirationStatus === 'expired' && (
+                            <span className="ml-2 px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                              Expirado!
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         <div className="flex items-center space-x-2">
-                          <Clock className="h-4 w-4 text-gray-400" />
+                          <Clock className="h-4 w-4 text-indigo-400" />
                           <span>{getLastNotificationInfo(tool)}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <div className="flex items-center justify-center space-x-3">
                           {(expirationStatus === 'warning' || expirationStatus === 'notice') && (
-                            <div className="relative" title="Notificações automáticas ativadas">
+                            <div className="relative group" title="Notificações automáticas ativadas">
                               <Mail className="h-5 w-5 text-blue-500" />
-                              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full" />
+                              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full group-hover:animate-ping"></div>
+                              <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full"></div>
                             </div>
                           )}
                           <button
                             onClick={() => handleEdit(tool)}
-                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-1 rounded-full hover:bg-blue-50"
+                            className="text-blue-600 hover:text-blue-800 transition-colors duration-200 p-2 rounded-full hover:bg-blue-50 transform hover:scale-110"
                             title="Editar"
                           >
                             <Pencil className="h-5 w-5" />
                           </button>
                           <button
                             onClick={() => handleDelete(tool.id)}
-                            className="text-red-600 hover:text-red-800 transition-colors duration-200 p-1 rounded-full hover:bg-red-50"
+                            className="text-red-600 hover:text-red-800 transition-colors duration-200 p-2 rounded-full hover:bg-red-50 transform hover:scale-110"
                             title="Excluir"
                           >
                             <Trash2 className="h-5 w-5" />
@@ -509,9 +578,11 @@ const ToolsAndLicenses = () => {
               </tbody>
             </table>
           </div>
-          <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
-            <div className="flex items-center text-sm text-gray-500">
-              <Mail className="h-5 w-5 text-blue-500 mr-2" />
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center text-sm text-gray-600">
+              <div className="p-1 bg-blue-100 rounded-full mr-2">
+                <Mail className="h-5 w-5 text-blue-500" />
+              </div>
               <span>
                 Notificações automáticas são enviadas quando uma ferramenta ou licença está a 30/15 dias ou menos de uma semana de expirar.
               </span>
@@ -519,6 +590,27 @@ const ToolsAndLicenses = () => {
           </div>
         </div>
       )}
+      
+      {/* Estilo global para animações */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };
