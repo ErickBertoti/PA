@@ -10,11 +10,6 @@ lerna-debug.log*
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-
-# Ignore arquivos de configuração
-*.env
-.env
-
 # Runtime data
 pids
 *.pid
