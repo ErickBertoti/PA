@@ -6,8 +6,9 @@ import NewPost from './components/pages/NewPost'
 import Login from './components/pages/Login'
 import Register from './components/pages/Register'
 import ToolsAndLicenses from './components/pages/ToolsAndLicenses'
-import Training from './components/pages/Training' // Importa a nova página
+import Training from './components/pages/Training'
 import TrainingList from './components/pages/TrainingList'
+import AdminPanel from './components/pages/AdminPanel'
 
 import axios from 'axios';
 
@@ -58,7 +59,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             }
           />
           <Route
-            path="training"  // Nova página
+            path="training"
             element={
               <ProtectedRoute>
                 <Training />
@@ -66,7 +67,15 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             }
           />
           <Route
-            path="trainingList"  // Nova página
+            path="admin"
+            element={
+              <ProtectedRoute adminOnly={true}>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="trainingList"
             element={
               <ProtectedRoute>
                 <TrainingList />

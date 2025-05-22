@@ -1,10 +1,8 @@
+import React, { useState, useEffect } from 'react';
 import { Disclosure } from '@headlessui/react';
-import { Menu, LogOut, Home, FilePlus, Wrench, GraduationCap, X, User as UserIcon, Bell } from 'lucide-react';
+import { Menu, LogOut, Home, FilePlus, Wrench, GraduationCap, X, User as UserIcon, Bell, Shield } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import axios from 'axios';
-
-import logoDark from './assets/logo_dark.png';
 
 function classNames(...classes) {
   return classes.filter(Boolean).join(' ');
@@ -16,10 +14,11 @@ export default function NavBar() {
   const [scrolled, setScrolled] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    const fetchUserName = async () => {
+    const fetchUserProfile = async () => {
       try {
         const response = await axios.get('/api/user/profile', {
           headers: { 
@@ -27,6 +26,7 @@ export default function NavBar() {
           }
         });
         setUserName(response.data.name);
+        setUserRole(response.data.role);
       } catch (error) {
         console.error('Error fetching user profile:', error);
       }
@@ -38,7 +38,7 @@ export default function NavBar() {
     };
 
     window.addEventListener('scroll', handleScroll);
-    fetchUserName();
+    fetchUserProfile();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -77,6 +77,18 @@ export default function NavBar() {
       bgColor: 'bg-purple-500'
     }
   ];
+  
+  // Adicionar item de administração apenas para admins
+  if (userRole === 'ADMIN') {
+    navigation.push({
+      name: 'Administração',
+      current: location.pathname === '/admin',
+      href: '/admin',
+      icon: Shield,
+      color: 'hover:text-red-400',
+      bgColor: 'bg-red-500'
+    });
+  }
 
   return (
     <Disclosure as="nav" 
@@ -191,12 +203,23 @@ export default function NavBar() {
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 sm:static sm:inset-auto sm:ml-6 sm:pr-0">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-xl">
-                    <div className="p-1.5 bg-indigo-500/50 rounded-lg">
+                    <div className={`p-1.5 ${userRole === 'ADMIN' ? 'bg-red-500/50' : 'bg-indigo-500/50'} rounded-lg`}>
                       <UserIcon className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-sm text-gray-200 font-medium">
-                      {userName || 'Usuário'}
-                    </span>
+                    <div>
+                      <span className="text-sm text-gray-200 font-medium">
+                        {userName || 'Usuário'}
+                      </span>
+                      {userRole && (
+                        <span className={`text-xs ml-2 px-1.5 py-0.5 rounded-full ${
+                          userRole === 'ADMIN' 
+                            ? 'bg-red-100 text-red-800' 
+                            : 'bg-indigo-100 text-indigo-800'
+                        }`}>
+                          {userRole === 'ADMIN' ? 'Admin' : 'Usuário'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <button
@@ -264,24 +287,6 @@ export default function NavBar() {
               </button>
             </div>
           </Disclosure.Panel>
-          
-          {/* Estilos para animações */}
-          <style jsx global>{`
-            @keyframes fadeIn {
-              from { opacity: 0; }
-              to { opacity: 1; }
-            }
-            
-            @keyframes slideDown {
-              from { opacity: 0; transform: translateY(-10px); }
-              to { opacity: 1; transform: translateY(0); }
-            }
-            
-            .fade-out {
-              opacity: 0;
-              transition: opacity 0.3s ease-out;
-            }
-          `}</style>
         </>
       )}
     </Disclosure>

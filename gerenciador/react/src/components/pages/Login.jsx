@@ -270,57 +270,6 @@ const Login = () => {
           </div>
         </div>
       </div>
-      
-      {/* Estilos para animações */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        
-        @keyframes gradientBackground {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.8s ease-out forwards;
-        }
-        
-        .animate-slideDown {
-          animation: slideDown 0.5s ease-out forwards;
-        }
-        
-        .animate-blob {
-          animation: blob 7s infinite alternate;
-        }
-        
-        .animate-gradientBackground {
-          background-size: 300% 300%;
-          animation: gradientBackground 15s ease infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 };

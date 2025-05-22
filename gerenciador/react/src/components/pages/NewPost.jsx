@@ -405,50 +405,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
         )}
       </div>
       
-      {/* Estilos para animações */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        @keyframes blob {
-          0% { transform: translate(0px, 0px) scale(1); }
-          33% { transform: translate(30px, -50px) scale(1.1); }
-          66% { transform: translate(-20px, 20px) scale(0.9); }
-          100% { transform: translate(0px, 0px) scale(1); }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-        
-        .animate-slideDown {
-          animation: slideDown 0.5s ease-out forwards;
-        }
-        
-        .animate-slideUp {
-          animation: slideUp 0.5s ease-out forwards;
-        }
-        
-        .animate-blob {
-          animation: blob 7s infinite alternate;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-      `}</style>
+      
     </div>
   );
 }

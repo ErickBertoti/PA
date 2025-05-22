@@ -56,22 +56,187 @@ const authenticateToken = (req, res, next) => {
     }
 
     req.userId = decoded.id; // Coloca o ID do usuário no objeto `req`
+    req.userRole = decoded.role; // Adiciona o papel do usuário no objeto `req`
     next(); // Chama o próximo middleware ou a função de rota
   });
+};
+
+// Middleware para verificar se o usuário é admin
+const isAdmin = (req, res, next) => {
+  if (req.userRole !== 'ADMIN') {
+    return res.status(403).json({ error: 'Forbidden: Admin access required' });
+  }
+  next();
+};
+
+// Middleware para verificar permissões de acesso a um post
+const checkPostAccess = async (req, res, next) => {
+  try {
+    const postId = +req.params.id;
+    const userId = req.userId;
+    const userRole = req.userRole;
+    
+    // Admins têm acesso total
+    if (userRole === 'ADMIN') {
+      return next();
+    }
+    
+    const post = await prisma.posts.findUnique({
+      where: { id: postId },
+      include: {
+        sharedWith: {
+          where: { userId: userId }
+        }
+      }
+    });
+    
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    
+    // Verificar se o usuário é o proprietário
+    if (post.ownerId === userId) {
+      return next();
+    }
+    
+    // Verificar se o post é público
+    if (post.isPublic) {
+      // Para posts públicos, permitir apenas visualização para não-proprietários
+      if (req.method === 'GET') {
+        return next();
+      } else {
+        return res.status(403).json({ error: 'Forbidden: You can only view public posts' });
+      }
+    }
+    
+    // Verificar se o usuário tem acesso compartilhado
+    if (post.sharedWith && post.sharedWith.length > 0) {
+      const access = post.sharedWith[0];
+      
+      // Verificar o tipo de acesso com base no método HTTP
+      if (req.method === 'GET' && access.canView) {
+        return next();
+      } else if ((req.method === 'PUT' || req.method === 'PATCH') && access.canEdit) {
+        return next();
+      } else if (req.method === 'DELETE' && access.canDelete) {
+        return next();
+      }
+    }
+    
+    return res.status(403).json({ error: 'Forbidden: You do not have permission to access this resource' });
+  } catch (error) {
+    console.error('Error checking post access:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Middleware para verificar permissões de acesso a um treinamento
+const checkTrainingAccess = async (req, res, next) => {
+  try {
+    const trainingId = +req.params.id;
+    const userId = req.userId;
+    const userRole = req.userRole;
+    
+    // Admins têm acesso total
+    if (userRole === 'ADMIN') {
+      return next();
+    }
+    
+    const training = await prisma.training.findUnique({
+      where: { id: trainingId },
+      include: {
+        sharedWith: {
+          where: { userId: userId }
+        }
+      }
+    });
+    
+    if (!training) {
+      return res.status(404).json({ error: 'Training not found' });
+    }
+    
+    // Verificar se o usuário é o proprietário
+    if (training.ownerId === userId) {
+      return next();
+    }
+    
+    // Verificar se o treinamento é público
+    if (training.isPublic) {
+      // Para treinamentos públicos, permitir apenas visualização para não-proprietários
+      if (req.method === 'GET') {
+        return next();
+      } else {
+        return res.status(403).json({ error: 'Forbidden: You can only view public trainings' });
+      }
+    }
+    
+    // Verificar se o usuário tem acesso compartilhado
+    if (training.sharedWith && training.sharedWith.length > 0) {
+      const access = training.sharedWith[0];
+      
+      // Verificar o tipo de acesso com base no método HTTP
+      if (req.method === 'GET' && access.canView) {
+        return next();
+      } else if ((req.method === 'PUT' || req.method === 'PATCH') && access.canEdit) {
+        return next();
+      } else if (req.method === 'DELETE' && access.canDelete) {
+        return next();
+      }
+    }
+    
+    return res.status(403).json({ error: 'Forbidden: You do not have permission to access this resource' });
+  } catch (error) {
+    console.error('Error checking training access:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 // Rota para obter os posts
 app.get("/api/posts", authenticateToken, async (req, res) => {
   try {
     const { categoryId } = req.query;
+    const userId = req.userId;
+    const userRole = req.userRole;
 
-    const filter = categoryId ? { where: { categoryId: +categoryId } } : {};
+    let filter = categoryId ? { where: { categoryId: +categoryId } } : {};
+    
+    // Se não for admin, filtrar apenas posts públicos ou com acesso
+    if (userRole !== 'ADMIN') {
+      filter = {
+        where: {
+          AND: [
+            categoryId ? { categoryId: +categoryId } : {},
+            {
+              OR: [
+                { isPublic: true },
+                { ownerId: userId },
+                {
+                  sharedWith: {
+                    some: {
+                      userId: userId,
+                      canView: true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      };
+    }
 
     const posts = await prisma.posts.findMany({
       ...filter,
       orderBy: [{ created: 'desc' }],
       include: {
-        category: true
+        category: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     });
 
@@ -91,6 +256,8 @@ app.post('/api/posts', authenticateToken, upload.single('file'), async (req, res
   const file = req.file;
   const caption = req.body.caption;
   const categoryId = req.body.categoryId;
+  const isPublic = req.body.isPublic === 'true';
+  const userId = req.userId;
 
   if (!file) {
     return res.status(400).json({ error: 'No file uploaded' });
@@ -118,6 +285,8 @@ app.post('/api/posts', authenticateToken, upload.single('file'), async (req, res
         fileType: file.mimetype,
         caption,
         categoryId: +categoryId,
+        ownerId: userId,
+        isPublic
       }
     });
 
@@ -129,7 +298,7 @@ app.post('/api/posts', authenticateToken, upload.single('file'), async (req, res
 });
 
 // Rota para obter a imagem/download de um post
-app.get("/api/posts/:id/download", async (req, res) => {
+app.get("/api/posts/:id/download", authenticateToken, checkPostAccess, async (req, res) => {
   try {
     const id = +req.params.id;
     const post = await prisma.posts.findUnique({ where: { id } });
@@ -150,14 +319,134 @@ app.get("/api/posts/:id/download", async (req, res) => {
   }
 });
 
-// Rota para deletar posts (exige autenticação)
-app.delete("/api/posts/:id", authenticateToken, async (req, res) => {
+// Rota para deletar posts (exige autenticação e verificação de acesso)
+app.delete("/api/posts/:id", authenticateToken, checkPostAccess, async (req, res) => {
   const id = +req.params.id;
-  const post = await prisma.posts.findUnique({ where: { id } });
+  
+  try {
+    const post = await prisma.posts.findUnique({ where: { id } });
+    
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
 
-  await deleteFile(post.imageName);
-  await prisma.posts.delete({ where: { id: post.id } });
-  res.send(post);
+    // Excluir compartilhamentos associados
+    await prisma.sharedAccess.deleteMany({
+      where: { postId: id }
+    });
+    
+    // Excluir o arquivo do S3
+    await deleteFile(post.imageName);
+    
+    // Excluir o post
+    await prisma.posts.delete({ where: { id } });
+    
+    res.send(post);
+  } catch (error) {
+    console.error("Delete error:", error);
+    res.status(500).json({ error: "Error deleting post" });
+  }
+});
+
+// Rota para atualizar a visibilidade de um post
+app.patch("/api/posts/:id/visibility", authenticateToken, checkPostAccess, async (req, res) => {
+  try {
+    const id = +req.params.id;
+    const { isPublic } = req.body;
+    
+    if (isPublic === undefined) {
+      return res.status(400).json({ error: "isPublic field is required" });
+    }
+    
+    const post = await prisma.posts.update({
+      where: { id },
+      data: { isPublic: Boolean(isPublic) }
+    });
+    
+    res.json(post);
+  } catch (error) {
+    console.error("Update visibility error:", error);
+    res.status(500).json({ error: "Error updating post visibility" });
+  }
+});
+
+// Rota para compartilhar um post com outro usuário
+app.post("/api/posts/:id/share", authenticateToken, checkPostAccess, async (req, res) => {
+  try {
+    const postId = +req.params.id;
+    const { userEmail, canView, canEdit, canDelete } = req.body;
+    
+    if (!userEmail) {
+      return res.status(400).json({ error: "User email is required" });
+    }
+    
+    // Verificar se o usuário existe
+    const targetUser = await prisma.profile.findUnique({
+      where: { email: userEmail }
+    });
+    
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Verificar se já existe um compartilhamento
+    const existingShare = await prisma.sharedAccess.findFirst({
+      where: {
+        postId,
+        userId: targetUser.id
+      }
+    });
+    
+    if (existingShare) {
+      // Atualizar permissões existentes
+      const updatedShare = await prisma.sharedAccess.update({
+        where: { id: existingShare.id },
+        data: {
+          canView: canView ?? existingShare.canView,
+          canEdit: canEdit ?? existingShare.canEdit,
+          canDelete: canDelete ?? existingShare.canDelete
+        }
+      });
+      
+      return res.json(updatedShare);
+    }
+    
+    // Criar novo compartilhamento
+    const newShare = await prisma.sharedAccess.create({
+      data: {
+        postId,
+        userId: targetUser.id,
+        canView: canView ?? true,
+        canEdit: canEdit ?? false,
+        canDelete: canDelete ?? false
+      }
+    });
+    
+    res.status(201).json(newShare);
+  } catch (error) {
+    console.error("Share error:", error);
+    res.status(500).json({ error: "Error sharing post" });
+  }
+});
+
+// Rota para remover compartilhamento de um post
+app.delete("/api/posts/:id/share/:userId", authenticateToken, checkPostAccess, async (req, res) => {
+  try {
+    const postId = +req.params.id;
+    const userId = +req.params.userId;
+    
+    const deletedShare = await prisma.sharedAccess.deleteMany({
+      where: {
+        postId,
+        userId
+      }
+    });
+    
+    res.json({ message: "Share removed successfully" });
+  } catch (error) {
+    console.error("Remove share error:", error);
+    res.status(500).json({ error: "Error removing share" });
+  }
 });
 
 // Rota para obter ferramentas e licenças
@@ -247,7 +536,8 @@ app.delete("/api/tools/:id", authenticateToken, async (req, res) => {
 // Rota para criar treinamento
 app.post('/api/trainings', authenticateToken, upload.single('file'), async (req, res) => {
   const file = req.file;
-  const { title, description, categoryId, links } = req.body;
+  const { title, description, categoryId, links, isPublic } = req.body;
+  const userId = req.userId;
 
   // Validação dos campos obrigatórios
   if (!title || !description || !categoryId) {
@@ -284,6 +574,8 @@ app.post('/api/trainings', authenticateToken, upload.single('file'), async (req,
         originalFileName: file.originalname,
         fileType: file.mimetype,
         categoryId: +categoryId,
+        ownerId: userId,
+        isPublic: isPublic === 'true',
         trainingLinks: {
           create: linksArray.map((link) => ({ url: link })),
         },
@@ -304,14 +596,48 @@ app.post('/api/trainings', authenticateToken, upload.single('file'), async (req,
 app.get('/api/trainings', authenticateToken, async (req, res) => {
   try {
     const { categoryId } = req.query;
+    const userId = req.userId;
+    const userRole = req.userRole;
 
-    const filter = categoryId ? { where: { categoryId: +categoryId } } : {};
+    let filter = categoryId ? { where: { categoryId: +categoryId } } : {};
+    
+    // Se não for admin, filtrar apenas treinamentos públicos ou com acesso
+    if (userRole !== 'ADMIN') {
+      filter = {
+        where: {
+          AND: [
+            categoryId ? { categoryId: +categoryId } : {},
+            {
+              OR: [
+                { isPublic: true },
+                { ownerId: userId },
+                {
+                  sharedWith: {
+                    some: {
+                      userId: userId,
+                      canView: true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      };
+    }
 
     const trainings = await prisma.training.findMany({
       ...filter,
       include: {
         trainingLinks: true,
         category: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       },
     });
 
@@ -330,7 +656,7 @@ app.get('/api/trainings', authenticateToken, async (req, res) => {
 });
 
 // Rota para obter a imagem de um treinamento
-app.get("/api/trainings/:id/image", async (req, res) => {
+app.get("/api/trainings/:id/image", authenticateToken, checkTrainingAccess, async (req, res) => {
   try {
     const id = +req.params.id;
 
@@ -361,7 +687,7 @@ app.get("/api/trainings/:id/image", async (req, res) => {
 });
 
 // Rota para download do arquivo de treinamento
-app.get("/api/trainings/:id/download", async (req, res) => {
+app.get("/api/trainings/:id/download", authenticateToken, checkTrainingAccess, async (req, res) => {
   try {
     const id = +req.params.id;
     const training = await prisma.training.findUnique({ where: { id } });
@@ -386,6 +712,146 @@ app.get("/api/trainings/:id/download", async (req, res) => {
   }
 });
 
+// Rota para deletar um treinamento
+app.delete("/api/trainings/:id", authenticateToken, checkTrainingAccess, async (req, res) => {
+  try {
+    const id = +req.params.id;
+    
+    const training = await prisma.training.findUnique({
+      where: { id },
+      include: { trainingLinks: true }
+    });
+    
+    if (!training) {
+      return res.status(404).json({ error: "Treinamento não encontrado" });
+    }
+    
+    // Excluir links associados
+    await prisma.trainingLink.deleteMany({
+      where: { trainingId: id }
+    });
+    
+    // Excluir compartilhamentos associados
+    await prisma.sharedAccess.deleteMany({
+      where: { trainingId: id }
+    });
+    
+    // Excluir o arquivo do S3 se existir
+    if (training.imageName) {
+      await deleteFile(training.imageName);
+    }
+    
+    // Excluir o treinamento
+    await prisma.training.delete({ where: { id } });
+    
+    res.json({ message: "Treinamento excluído com sucesso" });
+  } catch (error) {
+    console.error("Erro ao excluir treinamento:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// Rota para atualizar a visibilidade de um treinamento
+app.patch("/api/trainings/:id/visibility", authenticateToken, checkTrainingAccess, async (req, res) => {
+  try {
+    const id = +req.params.id;
+    const { isPublic } = req.body;
+    
+    if (isPublic === undefined) {
+      return res.status(400).json({ error: "isPublic field is required" });
+    }
+    
+    const training = await prisma.training.update({
+      where: { id },
+      data: { isPublic: Boolean(isPublic) }
+    });
+    
+    res.json(training);
+  } catch (error) {
+    console.error("Update visibility error:", error);
+    res.status(500).json({ error: "Error updating training visibility" });
+  }
+});
+
+// Rota para compartilhar um treinamento com outro usuário
+app.post("/api/trainings/:id/share", authenticateToken, checkTrainingAccess, async (req, res) => {
+  try {
+    const trainingId = +req.params.id;
+    const { userEmail, canView, canEdit, canDelete } = req.body;
+    
+    if (!userEmail) {
+      return res.status(400).json({ error: "User email is required" });
+    }
+    
+    // Verificar se o usuário existe
+    const targetUser = await prisma.profile.findUnique({
+      where: { email: userEmail }
+    });
+    
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Verificar se já existe um compartilhamento
+    const existingShare = await prisma.sharedAccess.findFirst({
+      where: {
+        trainingId,
+        userId: targetUser.id
+      }
+    });
+    
+    if (existingShare) {
+      // Atualizar permissões existentes
+      const updatedShare = await prisma.sharedAccess.update({
+        where: { id: existingShare.id },
+        data: {
+          canView: canView ?? existingShare.canView,
+          canEdit: canEdit ?? existingShare.canEdit,
+          canDelete: canDelete ?? existingShare.canDelete
+        }
+      });
+      
+      return res.json(updatedShare);
+    }
+    
+    // Criar novo compartilhamento
+    const newShare = await prisma.sharedAccess.create({
+      data: {
+        trainingId,
+        userId: targetUser.id,
+        canView: canView ?? true,
+        canEdit: canEdit ?? false,
+        canDelete: canDelete ?? false
+      }
+    });
+    
+    res.status(201).json(newShare);
+  } catch (error) {
+    console.error("Share error:", error);
+    res.status(500).json({ error: "Error sharing training" });
+  }
+});
+
+// Rota para remover compartilhamento de um treinamento
+app.delete("/api/trainings/:id/share/:userId", authenticateToken, checkTrainingAccess, async (req, res) => {
+  try {
+    const trainingId = +req.params.id;
+    const userId = +req.params.userId;
+    
+    const deletedShare = await prisma.sharedAccess.deleteMany({
+      where: {
+        trainingId,
+        userId
+      }
+    });
+    
+    res.json({ message: "Share removed successfully" });
+  } catch (error) {
+    console.error("Remove share error:", error);
+    res.status(500).json({ error: "Error removing share" });
+  }
+});
+
 // Rota para obter categorias
 app.get("/api/categories", async (req, res) => {
   const categories = await prisma.category.findMany();
@@ -393,7 +859,7 @@ app.get("/api/categories", async (req, res) => {
 });
 
 // Rota para obter a imagem de um post
-app.get("/api/posts/:id/image", async (req, res) => {
+app.get("/api/posts/:id/image", authenticateToken, checkPostAccess, async (req, res) => {
   try {
     const id = +req.params.id
 
@@ -429,7 +895,12 @@ app.post('/api/signup', async (req, res) => {
 
   try {
     await prisma.profile.create({
-      data: { email, password, name },
+      data: { 
+        email, 
+        password, 
+        name,
+        role: 'USER' // Por padrão, novos usuários são criados com papel USER
+      },
     });
 
     return res.status(201).json({ message: 'User created successfully' });
@@ -454,7 +925,10 @@ app.post('/api/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
-  const token = jwt.sign({ id: profile.id }, secretKey, { expiresIn: '1h' });
+  const token = jwt.sign({ 
+    id: profile.id,
+    role: profile.role
+  }, secretKey, { expiresIn: '1h' });
 
   return res.status(200).json({ token });
 });
@@ -467,7 +941,8 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
       select: {
         id: true,
         name: true,
-        email: true
+        email: true,
+        role: true
       }
     });
 
@@ -476,8 +951,10 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
     }
 
     res.json({
+      id: profile.id,
       name: profile.name,
-      email: profile.email
+      email: profile.email,
+      role: profile.role
     });
   } catch (error) {
     console.error('Error fetching user profile:', error);
@@ -487,7 +964,97 @@ app.get("/api/user/profile", authenticateToken, async (req, res) => {
 
 // Rota para verificar se o usuário está autenticado
 app.get("/api/authenticated", authenticateToken, (req, res) => {
-  return res.status(200).json({ isAuthenticated: true });
+  return res.status(200).json({ 
+    isAuthenticated: true,
+    role: req.userRole
+  });
+});
+
+// Rota para listar todos os usuários (apenas para admin)
+app.get("/api/users", authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const users = await prisma.profile.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true
+      }
+    });
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Rota para promover um usuário a admin (apenas para admin)
+app.patch("/api/users/:id/promote", authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const userId = +req.params.id;
+    
+    const user = await prisma.profile.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const updatedUser = await prisma.profile.update({
+      where: { id: userId },
+      data: { role: 'ADMIN' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      }
+    });
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error promoting user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Rota para rebaixar um admin a usuário comum (apenas para admin)
+app.patch("/api/users/:id/demote", authenticateToken, isAdmin, async (req, res) => {
+  try {
+    const userId = +req.params.id;
+    
+    // Não permitir que um admin rebaixe a si mesmo
+    if (userId === req.userId) {
+      return res.status(400).json({ error: 'Cannot demote yourself' });
+    }
+    
+    const user = await prisma.profile.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const updatedUser = await prisma.profile.update({
+      where: { id: userId },
+      data: { role: 'USER' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      }
+    });
+    
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error demoting user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Configurar tarefa CRON para verificar ferramentas que expiram em breve todos os dias às 6h da manhã
